@@ -1,0 +1,45 @@
+# ========================
+# Dependencias de Node
+# ========================
+node_modules/
+/core/node_modules/
+/admin/node_modules/
+
+# ========================
+# Variables de entorno y Secretos (¡CRÍTICO!)
+# ========================
+.env
+.env.local
+.env.development
+.env.production
+
+# ========================
+# Base de datos SQLite local
+# (No queremos subir la data de prueba a GitHub)
+# ========================
+*.sqlite
+*.sqlite3
+*.db
+*.sqlite-journal
+/content/*.sqlite
+
+# ========================
+# Archivos de Build y Compilación
+# ========================
+dist/
+build/
+/core/dist/
+/admin/build/
+
+# ========================
+# Logs de errores
+# ========================
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ========================
+# Archivos del Sistema Operativo
+# ========================
+.DS_Store
+Thumbs.db

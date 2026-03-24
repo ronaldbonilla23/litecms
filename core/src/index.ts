@@ -1,0 +1,36 @@
+import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middlewares globales
+app.use(cors());
+app.use(express.json()); // Permite a la API recibir payloads en formato JSON
+
+// Ruta de diagnóstico (Health Check)
+app.get('/api/health', (req: Request, res: Response) => {
+    res.json({ message: 'LiteCMS API funcionando correctamente' });
+});
+
+// Ruta de prueba para forzar un error y validar nuestra arquitectura
+app.get('/api/error-test', (req: Request, res: Response, next: NextFunction) => {
+    const err = new Error('Este es un error de prueba simulado para LiteCMS');
+    next(err); // Pasamos el error al manejador global
+});
+
+// MANEJADOR GLOBAL DE ERRORES (Cumpliendo el Technical Brief)
+app.use((err: Error | any, req: Request, res: Response, next: NextFunction) => {
+    console.error('[LiteCMS Error]:', err.message);
+
+    const statusCode = err.statusCode || 500;
+
+    // Siempre devolvemos el formato exacto exigido en el documento
+    res.status(statusCode).json({
+        error: err.message || 'Error interno del servidor'
+    });
+});
+
+app.listen(PORT, () => {
+    console.log(`🚀 Servidor LiteCMS corriendo en http://localhost:${PORT}`);
+});
