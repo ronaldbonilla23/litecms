@@ -1,5 +1,13 @@
-import express, { Request, Response, NextFunction } from 'express';
+import 'dotenv/config';
+import express from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import { checkDatabaseConnection } from './database';
+import path from 'path';
+import pageRoutes from './modules/pages/pages.routes';
+import installRoutes from './modules/install/install.routes';
+import authRoutes from './modules/auth/auth.routes';
+import mediaRoutes from './modules/media/media.routes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,11 +21,21 @@ app.get('/api/health', (req: Request, res: Response) => {
     res.json({ message: 'LiteCMS API funcionando correctamente' });
 });
 
+app.use('/api/install', installRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/pages', pageRoutes);
+app.use('/api/media', mediaRoutes);
+
+// Servir archivos estáticos de forma pública
+app.use('/uploads', express.static(path.join(__dirname, '../../content/uploads')));
+
+
 // Ruta de prueba para forzar un error y validar nuestra arquitectura
 app.get('/api/error-test', (req: Request, res: Response, next: NextFunction) => {
     const err = new Error('Este es un error de prueba simulado para LiteCMS');
     next(err); // Pasamos el error al manejador global
 });
+
 
 // MANEJADOR GLOBAL DE ERRORES (Cumpliendo el Technical Brief)
 app.use((err: Error | any, req: Request, res: Response, next: NextFunction) => {
@@ -31,6 +49,11 @@ app.use((err: Error | any, req: Request, res: Response, next: NextFunction) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`🚀 Servidor LiteCMS corriendo en http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(PORT, async () => {
+        console.log(`🚀 Servidor LiteCMS corriendo en http://localhost:${PORT}`);
+        await checkDatabaseConnection(); // Verificamos la DB al arrancar
+    });
+}
+
+export default app;
