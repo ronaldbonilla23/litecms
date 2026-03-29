@@ -73,3 +73,29 @@ export const deleteMedia = async (req: Request, res: Response, next: NextFunctio
         next(error);
     }
 };
+
+export const updateMediaSeo = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const { alt_text, seo_title } = req.body;
+
+        const mediaItem = await db('media').where({ id }).first();
+
+        if (!mediaItem) {
+            res.status(404).json({ error: 'El archivo indicado no existe' });
+            return;
+        }
+
+        await db('media').where({ id }).update({
+            alt_text: alt_text || null,
+            seo_title: seo_title || null,
+            updated_at: db.fn.now()
+        });
+
+        const updatedMedia = await db('media').where({ id }).first();
+
+        res.json({ message: 'SEO actualizado exitosamente', media: updatedMedia });
+    } catch (error) {
+        next(error);
+    }
+};

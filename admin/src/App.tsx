@@ -3,11 +3,18 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { MediaLibrary } from './pages/MediaLibrary';
+import { Pages } from './pages/Pages';
+import { PageEditor } from './pages/PageEditor';
 import { AdminLayout } from './components/layout/AdminLayout';
 
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
-  const isAuthenticated = !!localStorage.getItem('token');
-  return isAuthenticated ? <AdminLayout>{children}</AdminLayout> : <Navigate to="/login" replace />;
+  const token = localStorage.getItem('token');
+  const isAuthenticated = token && token !== 'null' && token !== 'undefined';
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  return <AdminLayout>{children}</AdminLayout>;
 };
 
 function App() {
@@ -28,6 +35,30 @@ function App() {
           element={
             <ProtectedRoute>
               <MediaLibrary />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/pages"
+          element={
+            <ProtectedRoute>
+              <Pages />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/pages/new"
+          element={
+            <ProtectedRoute>
+              <PageEditor />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/pages/edit/:id"
+          element={
+            <ProtectedRoute>
+              <PageEditor />
             </ProtectedRoute>
           }
         />

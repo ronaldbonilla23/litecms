@@ -8,6 +8,7 @@ import pageRoutes from './modules/pages/pages.routes';
 import installRoutes from './modules/install/install.routes';
 import authRoutes from './modules/auth/auth.routes';
 import mediaRoutes from './modules/media/media.routes';
+import statsRoutes from './modules/stats/stats.routes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,6 +26,7 @@ app.use('/api/install', installRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/pages', pageRoutes);
 app.use('/api/media', mediaRoutes);
+app.use('/api/stats', statsRoutes);
 
 // Servir archivos estáticos de forma pública
 app.use('/uploads', express.static(path.join(__dirname, '../../content/uploads')));

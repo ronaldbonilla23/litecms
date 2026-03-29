@@ -91,3 +91,23 @@ export const updatePage = async (req: AuthRequest, res: Response, next: NextFunc
         next(error);
     }
 };
+
+export const getPageById = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const page = await db('pages').where({ id }).first();
+
+        if (!page) {
+            res.status(404).json({ error: 'La página solicitada no existe' });
+            return;
+        }
+
+        if (page.fields && typeof page.fields === 'string') {
+            page.fields = JSON.parse(page.fields);
+        }
+
+        res.json(page);
+    } catch (error) {
+        next(error);
+    }
+};
