@@ -5,8 +5,9 @@ import api from '../api/axios';
 const API_URL = '/templates';
 
 interface Template {
-  id?: number;
+  id?: string;
   name: string;
+  type: string;
   content: string;
   is_active: boolean;
 }
@@ -33,7 +34,7 @@ export default function TemplateEditor() {
   };
 
   const handleNewTemplate = () => {
-    const newTemp: Template = { name: 'Nueva Plantilla', content: '\n<div class="container">\n  \n</div>', is_active: true };
+    const newTemp: Template = { name: 'Nueva Plantilla', type: 'page', content: '\n<div class="container">\n  \n</div>', is_active: true };
     setActiveTemplate(newTemp);
   };
 
@@ -82,7 +83,15 @@ export default function TemplateEditor() {
         {activeTemplate ? (
           <>
             <div className="h-16 border-b border-gray-800 flex items-center justify-between px-6 bg-[#1a1a1a]/30">
-              <input type="text" value={activeTemplate.name} onChange={(e) => setActiveTemplate({ ...activeTemplate, name: e.target.value })} className="bg-transparent text-lg font-bold text-white focus:outline-none focus:border-b focus:border-[#C2F86C]" placeholder="Nombre de la Plantilla" />
+              <div className="flex items-center gap-4 flex-1">
+                <input type="text" value={activeTemplate.name} onChange={(e) => setActiveTemplate({ ...activeTemplate, name: e.target.value })} className="bg-transparent text-lg font-bold text-white focus:outline-none focus:border-b focus:border-[#C2F86C]" placeholder="Nombre de la Plantilla" />
+                <select value={activeTemplate.type} onChange={(e) => setActiveTemplate({ ...activeTemplate, type: e.target.value })} className="bg-[#1c1c1c] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#C2F86C]">
+                  <option value="page">Page</option>
+                  <option value="header">Header</option>
+                  <option value="footer">Footer</option>
+                  <option value="section">Section</option>
+                </select>
+              </div>
               <div className="flex items-center gap-4">
                 <span className="text-xs text-gray-500">Tip: Usa {'{{ page.title }}'} para variables</span>
                 <button onClick={handleSave} disabled={isSaving} className="bg-[#C2F86C] text-black px-6 py-2 rounded uppercase tracking-widest text-xs font-bold hover:bg-[#d4ff8a] transition-all disabled:opacity-50">

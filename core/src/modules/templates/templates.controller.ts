@@ -12,9 +12,10 @@ export const createTemplate = async (req: AuthRequest, res: Response, next: Next
         }
 
         const [id] = await db('templates').insert({
+            id: crypto.randomUUID(),
             name,
             type,
-            content: JSON.stringify(content),
+            content: typeof content === 'string' ? content : JSON.stringify(content),
             is_active: is_active ?? true
         });
 
@@ -31,8 +32,8 @@ export const createTemplate = async (req: AuthRequest, res: Response, next: Next
 export const getAllTemplates = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { type, is_active } = req.query;
-        
-        let query = db('templates').select('id', 'name', 'type', 'is_active', 'created_at', 'updated_at');
+
+        let query = db('templates').select('id', 'name', 'type', 'content', 'is_active', 'created_at', 'updated_at');
 
         if (type) {
             query = query.where('type', type as string);
@@ -60,10 +61,7 @@ export const getTemplateById = async (req: Request, res: Response, next: NextFun
             return;
         }
 
-        if (template.content && typeof template.content === 'string') {
-            template.content = JSON.parse(template.content);
-        }
-
+        // El contenido se guarda como string, no necesita parseo
         res.json(template);
     } catch (error) {
         next(error);
@@ -81,7 +79,7 @@ export const updateTemplate = async (req: AuthRequest, res: Response, next: Next
 
         if (name !== undefined) updateData.name = name;
         if (type !== undefined) updateData.type = type;
-        if (content !== undefined) updateData.content = JSON.stringify(content);
+        if (content !== undefined) updateData.content = typeof content === 'string' ? content : JSON.stringify(content);
         if (is_active !== undefined) updateData.is_active = is_active;
 
         const updatedCount = await db('templates').where({ id }).update(updateData);
