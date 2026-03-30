@@ -10,6 +10,7 @@ import authRoutes from './modules/auth/auth.routes';
 import mediaRoutes from './modules/media/media.routes';
 import statsRoutes from './modules/stats/stats.routes';
 import themeSettingsRoutes from './modules/themeSettings/themeSettings.routes';
+import templatesRoutes from './modules/templates/templates.routes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -29,6 +30,7 @@ app.use('/api/pages', pageRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/theme-settings', themeSettingsRoutes);
+app.use('/api/templates', templatesRoutes);
 
 // Servir archivos estáticos de forma pública
 app.use('/uploads', express.static(path.join(__dirname, '../../content/uploads')));
