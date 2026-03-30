@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as templatesController from './templates.controller';
-import { authMiddleware } from '../auth/auth.middleware';
+import { verifyToken } from '../auth/auth.middleware';
 
 const router = Router();
 
@@ -9,9 +9,9 @@ router.get('/', templatesController.getAllTemplates);
 router.get('/:id', templatesController.getTemplateById);
 
 // Rutas protegidas
-router.post('/', authMiddleware, templatesController.createTemplate);
-router.put('/:id', authMiddleware, templatesController.updateTemplate);
-router.delete('/:id', authMiddleware, templatesController.deleteTemplate);
-router.post('/:id/toggle-active', authMiddleware, templatesController.toggleTemplateActive);
+router.post('/', verifyToken, templatesController.createTemplate);
+router.put('/:id', verifyToken, templatesController.updateTemplate);
+router.delete('/:id', verifyToken, templatesController.deleteTemplate);
+router.post('/:id/toggle-active', verifyToken, templatesController.toggleTemplateActive);
 
 export default router;
