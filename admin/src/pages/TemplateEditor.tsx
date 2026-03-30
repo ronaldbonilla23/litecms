@@ -46,8 +46,15 @@ export default function TemplateEditor() {
     if (!activeTemplate) return;
     setIsSaving(true);
     try {
-      await api.post(API_URL, activeTemplate);
-      alert('Plantilla guardada y desplegada 🚀');
+      if (activeTemplate.id) {
+        // Actualizar plantilla existente
+        await api.put(`${API_URL}/${activeTemplate.id}`, activeTemplate);
+        alert('Plantilla actualizada 🚀');
+      } else {
+        // Crear nueva plantilla
+        await api.post(API_URL, activeTemplate);
+        alert('Plantilla creada y desplegada 🚀');
+      }
       fetchTemplates();
     } catch (error) {
       console.error('Error al guardar:', error);
@@ -57,21 +64,37 @@ export default function TemplateEditor() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!activeTemplate?.id) return;
+    if (!confirm('¿Estás seguro de eliminar esta plantilla?')) return;
+
+    try {
+      await api.delete(`${API_URL}/${activeTemplate.id}`);
+      alert('Plantilla eliminada');
+      setActiveTemplate(null);
+      fetchTemplates();
+    } catch (error) {
+      console.error('Error al eliminar:', error);
+      alert('Hubo un error al eliminar la plantilla.');
+    }
+  };
+
   return (
     <div className="flex h-[calc(100vh-4rem)] bg-[#141414] text-white font-mono">
       <div className="w-64 border-r border-gray-800 p-4 flex flex-col bg-[#1a1a1a]/50">
         <h2 className="text-[#C2F86C] tracking-widest uppercase text-xs font-bold mb-6">Mis Plantillas</h2>
         <div className="flex-1 overflow-y-auto space-y-2">
-          {templates.map((tpl, index) => (
+          {templates.map((tpl) => (
             <button
-              key={tpl.id || index}
+              key={tpl.id}
               onClick={() => setActiveTemplate(tpl)}
               className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${activeTemplate?.id === tpl.id
                 ? 'bg-[#C2F86C]/10 text-[#C2F86C] border border-[#C2F86C]/30'
                 : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                 }`}
             >
-              {tpl.name}
+              <div className="font-medium truncate">{tpl.name}</div>
+              <div className="text-[10px] text-gray-500 uppercase tracking-wider">{tpl.type}</div>
             </button>
           ))}
         </div>
@@ -94,8 +117,13 @@ export default function TemplateEditor() {
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-xs text-gray-500">Tip: Usa {'{{ page.title }}'} para variables</span>
+                {activeTemplate.id && (
+                  <button onClick={handleDelete} className="text-red-500 hover:text-red-400 text-xs font-bold uppercase tracking-widest transition-colors">
+                    Delete
+                  </button>
+                )}
                 <button onClick={handleSave} disabled={isSaving} className="bg-[#C2F86C] text-black px-6 py-2 rounded uppercase tracking-widest text-xs font-bold hover:bg-[#d4ff8a] transition-all disabled:opacity-50">
-                  {isSaving ? 'Guardando...' : 'Deploy Code 🚀'}
+                  {isSaving ? 'Guardando...' : activeTemplate.id ? 'Update Code 🚀' : 'Deploy Code 🚀'}
                 </button>
               </div>
             </div>
