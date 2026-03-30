@@ -7,10 +7,15 @@ const api = axios.create({
 // Esto enviará el token automáticamente en cada petición
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
+  console.log('[API Interceptor] Token:', token ? 'Presente (' + token.substring(0, 20) + '...)' : 'Ausente');
+  console.log('[API Interceptor] Request:', config.method?.toUpperCase(), config.url);
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    config.headers.set('Authorization', `Bearer ${token}`);
+    console.log('[API Interceptor] Authorization header agregado');
   }
   return config;
+}, (error) => {
+  return Promise.reject(error);
 });
 
 // Interceptor para manejar errores globales (como el 401 de sesión expirada)
