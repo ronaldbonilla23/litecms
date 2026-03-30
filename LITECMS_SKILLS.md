@@ -60,11 +60,27 @@ Skill "DataBinding": Siempre usar useEffect para cargar datos, manejar estados d
 
 Skill "Responsive": Todo componente debe ser mobile-friendly usando el sistema de rejilla de Tailwind.
 
+
 🎯 4. Próximo Objetivo: Page Editor
 El editor debe permitir:
+- Campos de Texto/Título con tipografía Plus Jakarta Sans.
+- Selector de imágenes que abra un Modal conectado a la Media Library existente.
+- Guardado automático o mediante botón flotante estilo "Rocket Launch".
 
-Campos de Texto/Título con tipografía Plus Jakarta Sans.
+🔍 5. Skill de Introspección (Base de Datos y Tipos)
+Reglas para la integridad de datos entre Backend y Frontend:
 
-Selector de imágenes que abra un Modal conectado a la Media Library existente.
+Ubicación Central:
+Toda definición de datos reside en `shared/types.ts`. Nunca redeclarar interfaces en componentes locales.
 
-Guardado automático o mediante botón flotante estilo "Rocket Launch".
+Sincronía con DB:
+- Analizar migraciones (`core/src/database/migrations/`) para cambios.
+- Actualizar `Page`, `Media` o `User` en `shared/types.ts`.
+- Usar `readonly id: number` y tipos literales para estados (ej: `status: 'draft' | 'published'`).
+
+Validación Universal (Zod):
+- Usar esquemas de Zod para validación de Payloads en Express.
+- Usar los mismos esquemas para validación de formularios en React.
+
+Documentación:
+- JSDoc obligatorio para cada propiedad (mejor autocompleto).

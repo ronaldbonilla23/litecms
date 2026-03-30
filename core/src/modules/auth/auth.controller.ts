@@ -2,15 +2,21 @@ import type { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import db from '../../database';
+import { LoginSchema } from '../../../../shared/types';
 
 export const loginUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const { email, password } = req.body;
+        const validation = LoginSchema.safeParse(req.body);
 
-        if (!email || !password) {
-            res.status(400).json({ error: 'Email y contraseña son obligatorios' });
+        if (!validation.success) {
+            res.status(400).json({ 
+                error: 'Datos de acceso inválidos', 
+                details: validation.error.flatten().fieldErrors 
+            });
             return;
         }
+
+        const { email, password } = validation.data;
 
         const user = await db('users').where({ email }).first();
 

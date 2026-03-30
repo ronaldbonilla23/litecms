@@ -9,6 +9,7 @@ import installRoutes from './modules/install/install.routes';
 import authRoutes from './modules/auth/auth.routes';
 import mediaRoutes from './modules/media/media.routes';
 import statsRoutes from './modules/stats/stats.routes';
+import themeSettingsRoutes from './modules/themeSettings/themeSettings.routes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,6 +28,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/pages', pageRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/theme-settings', themeSettingsRoutes);
 
 // Servir archivos estáticos de forma pública
 app.use('/uploads', express.static(path.join(__dirname, '../../content/uploads')));
@@ -38,7 +40,12 @@ app.get('/api/error-test', (req: Request, res: Response, next: NextFunction) => 
     next(err); // Pasamos el error al manejador global
 });
 
-
+// Permite que tu Admin (5173) le hable a tu Core (3000)
+app.use(cors({
+    origin: 'http://localhost:5173',
+    methods: ['GET', 'PUT', 'POST', 'DELETE'],
+    credentials: true
+}));
 // MANEJADOR GLOBAL DE ERRORES (Cumpliendo el Technical Brief)
 app.use((err: Error | any, req: Request, res: Response, next: NextFunction) => {
     console.error('[LiteCMS Error]:', err.message);
@@ -50,6 +57,7 @@ app.use((err: Error | any, req: Request, res: Response, next: NextFunction) => {
         error: err.message || 'Error interno del servidor'
     });
 });
+
 
 if (process.env.NODE_ENV !== 'test') {
     app.listen(PORT, async () => {

@@ -6,6 +6,31 @@
 
 @layer base {
   body {
-    @apply bg-surface text-on-surface antialiased;
+    @apply bg-surface text-on-surface antialiased selection:bg-primary/30 selection:text-white;
   }
 }
+
+/* Custom Scrollbar Chrome - Cyber-Minimalist Style */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0e0e0e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #262626;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #C2F86C;
+}
+
+.craft-canvas-container {
+  background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.05) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+

@@ -1,15 +1,22 @@
 import type { Request, Response, NextFunction } from 'express';
 import db from '../../database';
 import { AuthRequest } from '../auth/auth.middleware';
+import { PageSchema } from '../../../../shared/types';
+import { ZodError } from 'zod';
 
 export const createPage = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const { title, slug, fields, status } = req.body;
+        const validation = PageSchema.safeParse(req.body);
 
-        if (!title || !slug) {
-            res.status(400).json({ error: 'Título y Slug son obligatorios' });
+        if (!validation.success) {
+            res.status(400).json({ 
+                error: 'Datos inválidos', 
+                details: validation.error.flatten().fieldErrors 
+            });
             return;
         }
+
+        const { title, slug, fields, status } = validation.data;
 
         // Insertamos en SQLite. Knex se encarga de convertir el objeto 'fields' a JSON
         const [id] = await db('pages').insert({
@@ -69,7 +76,19 @@ export const getAllPages = async (req: AuthRequest, res: Response, next: NextFun
 export const updatePage = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { id } = req.params;
-        const { title, fields, status } = req.body;
+        
+        // El esquema de actualización es parcial ya que no requerimos todos los campos
+        const validation = PageSchema.partial().safeParse(req.body);
+
+        if (!validation.success) {
+            res.status(400).json({ 
+                error: 'Datos de actualización inválidos', 
+                details: validation.error.flatten().fieldErrors 
+            });
+            return;
+        }
+
+        const { title, fields, status } = validation.data;
 
         const updateData: any = {
             updated_at: db.fn.now()

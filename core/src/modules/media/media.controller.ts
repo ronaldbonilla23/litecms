@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import db from '../../database';
 import fs from 'fs';
 import path from 'path';
+import { MediaSchema } from '../../../../shared/types';
 
 export const uploadFile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -77,7 +78,18 @@ export const deleteMedia = async (req: Request, res: Response, next: NextFunctio
 export const updateMediaSeo = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { id } = req.params;
-        const { alt_text, seo_title } = req.body;
+        
+        const validation = MediaSchema.safeParse(req.body);
+        
+        if (!validation.success) {
+            res.status(400).json({ 
+                error: 'Datos SEO inválidos', 
+                details: validation.error.flatten().fieldErrors 
+            });
+            return;
+        }
+
+        const { alt_text, seo_title } = validation.data;
 
         const mediaItem = await db('media').where({ id }).first();
 

@@ -1,0 +1,53 @@
+# Antigravity Ignore File - LiteCMS Architect Edition
+# --------------------------------------------------
+
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Builds & Compiled Output
+dist/
+build/
+.vite/
+*.tsbuildinfo
+
+# Databases & Persistence
+# Note: Knex migrations (core/src/database/migrations/) are EXPLICITLY ALLOWED by default
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+dev.sqlite3-journal
+
+# Environment & Credentials
+.env
+.env.*
+!.env.example
+
+# Logs & OS Metadata
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Multimedia & Binary Assets
+# Standard media library locations to avoid processing heavy binary blobs
+uploads/
+public/uploads/
+content/uploads/
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.svg
+*.webp
+*.ico
+
+# Testing & Metrics
+coverage/
+*.lcov
+.nyc_output/

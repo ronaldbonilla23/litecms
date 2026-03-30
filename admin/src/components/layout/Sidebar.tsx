@@ -32,6 +32,15 @@ export function Sidebar() {
           >
             <i className="fi fi-rr-picture text-xl mt-1"></i>
           </NavLink>
+
+          <NavLink
+            to="/dashboard/design-system"
+            className={({ isActive }) =>
+              `w-10 h-10 flex items-center justify-center rounded-full transition-all ${isActive ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-white hover:text-primary hover:bg-white/5'}`
+            }
+          >
+            <i className="fi fi-rr-palette text-xl mt-1"></i>
+          </NavLink>
         </nav>
         <div className="mt-4">
           <button className="w-10 h-10 flex items-center justify-center rounded-full text-white/60 hover:text-red-400 transition-all">

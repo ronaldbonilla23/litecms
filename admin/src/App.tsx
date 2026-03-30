@@ -6,11 +6,12 @@ import { MediaLibrary } from './pages/MediaLibrary';
 import { Pages } from './pages/Pages';
 import { PageEditor } from './pages/PageEditor';
 import { AdminLayout } from './components/layout/AdminLayout';
+import ThemeSettings from './pages/ThemeSettings';
 
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const token = localStorage.getItem('token');
   const isAuthenticated = token && token !== 'null' && token !== 'undefined';
-  
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
@@ -35,6 +36,14 @@ function App() {
           element={
             <ProtectedRoute>
               <MediaLibrary />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/design-system"
+          element={
+            <ProtectedRoute>
+              <ThemeSettings />
             </ProtectedRoute>
           }
         />
@@ -64,6 +73,7 @@ function App() {
         />
         {/* Redirect any unknown route to dashboard (which will redirect to login if not authenticated) */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
+
       </Routes>
     </Router>
   );
