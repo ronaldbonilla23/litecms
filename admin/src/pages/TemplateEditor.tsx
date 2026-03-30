@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
-import axios from 'axios';
+import api from '../api/axios';
 
-const API_URL = 'http://localhost:3000/api/templates';
+const API_URL = '/templates';
 
 interface Template {
   id?: number;
@@ -22,7 +22,7 @@ export default function TemplateEditor() {
 
   const fetchTemplates = async () => {
     try {
-      const response = await axios.get(API_URL);
+      const response = await api.get(API_URL);
       setTemplates(response.data);
       if (response.data.length > 0 && !activeTemplate) {
         setActiveTemplate(response.data[0]);
@@ -45,7 +45,7 @@ export default function TemplateEditor() {
     if (!activeTemplate) return;
     setIsSaving(true);
     try {
-      await axios.post(API_URL, activeTemplate);
+      await api.post(API_URL, activeTemplate);
       alert('Plantilla guardada y desplegada 🚀');
       fetchTemplates();
     } catch (error) {
@@ -65,11 +65,10 @@ export default function TemplateEditor() {
             <button
               key={tpl.id || index}
               onClick={() => setActiveTemplate(tpl)}
-              className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                activeTemplate?.id === tpl.id 
-                  ? 'bg-[#C2F86C]/10 text-[#C2F86C] border border-[#C2F86C]/30' 
-                  : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-              }`}
+              className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${activeTemplate?.id === tpl.id
+                ? 'bg-[#C2F86C]/10 text-[#C2F86C] border border-[#C2F86C]/30'
+                : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                }`}
             >
               {tpl.name}
             </button>
