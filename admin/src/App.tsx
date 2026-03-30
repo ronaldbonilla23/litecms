@@ -7,6 +7,7 @@ import { Pages } from './pages/Pages';
 import { PageEditor } from './pages/PageEditor';
 import { AdminLayout } from './components/layout/AdminLayout';
 import ThemeSettings from './pages/ThemeSettings';
+import TemplateEditor from './pages/TemplateEditor';
 
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const token = localStorage.getItem('token');
@@ -44,6 +45,14 @@ function App() {
           element={
             <ProtectedRoute>
               <ThemeSettings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/templates"
+          element={
+            <ProtectedRoute>
+              <TemplateEditor />
             </ProtectedRoute>
           }
         />

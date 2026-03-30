@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@craftjs/core": "^0.2.12",
+    "@monaco-editor/react": "^4.7.0",
     "axios": "^1.13.6",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.7.0",

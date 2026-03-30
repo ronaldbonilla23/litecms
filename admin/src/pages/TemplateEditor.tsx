@@ -1,0 +1,104 @@
+import React, { useState, useEffect } from 'react';
+import Editor from '@monaco-editor/react';
+import axios from 'axios';
+
+const API_URL = 'http://localhost:3000/api/templates';
+
+interface Template {
+  id?: number;
+  name: string;
+  content: string;
+  is_active: boolean;
+}
+
+export default function TemplateEditor() {
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [activeTemplate, setActiveTemplate] = useState<Template | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
+
+  const fetchTemplates = async () => {
+    try {
+      const response = await axios.get(API_URL);
+      setTemplates(response.data);
+      if (response.data.length > 0 && !activeTemplate) {
+        setActiveTemplate(response.data[0]);
+      }
+    } catch (error) {
+      console.error('Error al cargar plantillas:', error);
+    }
+  };
+
+  const handleNewTemplate = () => {
+    const newTemp: Template = { name: 'Nueva Plantilla', content: '\n<div class="container">\n  \n</div>', is_active: true };
+    setActiveTemplate(newTemp);
+  };
+
+  const handleEditorChange = (value: string | undefined) => {
+    if (activeTemplate) setActiveTemplate({ ...activeTemplate, content: value || '' });
+  };
+
+  const handleSave = async () => {
+    if (!activeTemplate) return;
+    setIsSaving(true);
+    try {
+      await axios.post(API_URL, activeTemplate);
+      alert('Plantilla guardada y desplegada 🚀');
+      fetchTemplates();
+    } catch (error) {
+      console.error('Error al guardar:', error);
+      alert('Hubo un error al guardar la plantilla.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex h-[calc(100vh-4rem)] bg-[#141414] text-white font-mono">
+      <div className="w-64 border-r border-gray-800 p-4 flex flex-col bg-[#1a1a1a]/50">
+        <h2 className="text-[#C2F86C] tracking-widest uppercase text-xs font-bold mb-6">Mis Plantillas</h2>
+        <div className="flex-1 overflow-y-auto space-y-2">
+          {templates.map((tpl, index) => (
+            <button
+              key={tpl.id || index}
+              onClick={() => setActiveTemplate(tpl)}
+              className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                activeTemplate?.id === tpl.id 
+                  ? 'bg-[#C2F86C]/10 text-[#C2F86C] border border-[#C2F86C]/30' 
+                  : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+              }`}
+            >
+              {tpl.name}
+            </button>
+          ))}
+        </div>
+        <button onClick={handleNewTemplate} className="mt-4 border border-dashed border-gray-600 text-gray-400 py-2 rounded text-sm hover:border-[#C2F86C] hover:text-[#C2F86C] transition-colors">
+          + Nueva Plantilla
+        </button>
+      </div>
+      <div className="flex-1 flex flex-col">
+        {activeTemplate ? (
+          <>
+            <div className="h-16 border-b border-gray-800 flex items-center justify-between px-6 bg-[#1a1a1a]/30">
+              <input type="text" value={activeTemplate.name} onChange={(e) => setActiveTemplate({ ...activeTemplate, name: e.target.value })} className="bg-transparent text-lg font-bold text-white focus:outline-none focus:border-b focus:border-[#C2F86C]" placeholder="Nombre de la Plantilla" />
+              <div className="flex items-center gap-4">
+                <span className="text-xs text-gray-500">Tip: Usa {'{{ page.title }}'} para variables</span>
+                <button onClick={handleSave} disabled={isSaving} className="bg-[#C2F86C] text-black px-6 py-2 rounded uppercase tracking-widest text-xs font-bold hover:bg-[#d4ff8a] transition-all disabled:opacity-50">
+                  {isSaving ? 'Guardando...' : 'Deploy Code 🚀'}
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 relative">
+              <Editor height="100%" language="html" theme="vs-dark" value={activeTemplate.content} onChange={handleEditorChange} options={{ minimap: { enabled: false }, fontSize: 14, fontFamily: "'Roboto Mono', monospace", wordWrap: 'on', padding: { top: 20 } }} />
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-gray-500">Selecciona o crea una plantilla para empezar.</div>
+        )}
+      </div>
+    </div>
+  );
+}
