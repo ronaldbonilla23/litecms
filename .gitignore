@@ -6,6 +6,11 @@ node_modules/
 /admin/node_modules/
 
 # ========================
+# Qwen Code Settings
+# ========================
+.qwen/
+
+# ========================
 # Variables de entorno y Secretos (¡CRÍTICO!)
 # ========================
 .env
