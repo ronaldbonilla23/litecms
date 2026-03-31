@@ -5,41 +5,59 @@ import Handlebars from 'handlebars';
 const CORE_URL = 'http://localhost:3000/api';
 
 export default function EngineRenderer() {
-  const [htmlContent, setHtmlContent] = useState<string>('<div style="color: white; padding: 2rem;">Conectando motores...</div>');
+  const [htmlContent, setHtmlContent] = useState<string>('<div class="text-white p-8">Cargando motor Tailwind JIT...</div>');
+  const [isTailwindLoaded, setIsTailwindLoaded] = useState(false);
 
   useEffect(() => {
+    const loadTailwindJIT = (settings: any) => {
+      // 1. Inyectar configuración dinámica de Tailwind conectada a SQLite
+      const scriptConfig = document.createElement('script');
+      scriptConfig.innerHTML = `
+        tailwind = {
+          config: {
+            theme: {
+              extend: {
+                colors: {
+                  primary: '${settings.primary_color || '#C2F86C'}',
+                  fondo: '${settings.bg_color || '#141414'}'
+                },
+                fontFamily: {
+                  sans: ['${settings.font_family || 'Inter'}', 'sans-serif']
+                }
+              }
+            }
+          }
+        }
+      `;
+      document.head.appendChild(scriptConfig);
+
+      // 2. Inyectar el compilador JIT de Tailwind
+      const scriptCDN = document.createElement('script');
+      scriptCDN.src = "https://cdn.tailwindcss.com";
+      scriptCDN.onload = () => setIsTailwindLoaded(true);
+      document.head.appendChild(scriptCDN);
+    };
+
     const initEngine = async () => {
       try {
-        // 1. Obtener y aplicar el Design System global
+        // Obtener el Design System
         const { data: settings } = await axios.get(`${CORE_URL}/theme-settings`);
-        const root = document.documentElement;
-        if (settings.primary_color) root.style.setProperty('--theme-primary', settings.primary_color);
-        if (settings.bg_color) root.style.setProperty('--theme-bg', settings.bg_color);
-        if (settings.font_family) root.style.setProperty('--theme-font', settings.font_family);
+        loadTailwindJIT(settings);
 
-        // 2. Obtener las plantillas
+        // Obtener las plantillas
         const { data: templates } = await axios.get(`${CORE_URL}/templates`);
-        
-        // Buscamos la que acabamos de crear o la primera disponible
         const activeTemplate = templates.find((t: any) => t.name === 'Global Header') || templates[0];
 
         if (activeTemplate) {
-          // 3. Compilar con Handlebars inyectando datos reales
           const template = Handlebars.compile(activeTemplate.content);
-          
-          // Simulación de datos que luego vendrán de la base de datos
-          const data = {
-            site: { name: 'LiteCMS Public Engine' }
-          };
-          
-          const compiledHtml = template(data);
-          setHtmlContent(compiledHtml);
+          const data = { site: { name: 'LiteCMS Public Engine' } };
+          setHtmlContent(template(data));
         } else {
-          setHtmlContent('<div style="color: white; padding: 2rem;">No hay plantillas publicadas.</div>');
+          setHtmlContent('<div class="text-white p-8">No hay plantillas publicadas.</div>');
         }
       } catch (error) {
-        console.error('Error en el Motor de Temas:', error);
-        setHtmlContent('<div style="color: red; padding: 2rem;">Error de conexión con el Core (Puerto 3000).</div>');
+        console.error('Error en el Motor:', error);
+        setHtmlContent('<div class="text-red-500 p-8">Error de conexión con el Core.</div>');
       }
     };
 
@@ -47,10 +65,9 @@ export default function EngineRenderer() {
   }, []);
 
   return (
-    <div 
-      className="min-h-screen" 
-      style={{ backgroundColor: 'var(--theme-bg)' }}
-      dangerouslySetInnerHTML={{ __html: htmlContent }} 
+    <div
+      className="min-h-screen bg-fondo font-sans"
+      dangerouslySetInnerHTML={{ __html: htmlContent }}
     />
   );
 }
