@@ -10,7 +10,10 @@
       "Bash(curl *)",
       "Bash(pkill *)",
       "Bash(true)",
-      "Bash(sleep *)"
+      "Bash(sleep *)",
+      "Bash(xargs *)",
+      "Bash(tee *)",
+      "Bash(tail *)"
     ]
   },
   "$version": 3

@@ -22,8 +22,16 @@ export const createPage = async (req: AuthRequest, res: Response, next: NextFunc
 
         // Obtener theme settings para compilar CSS
         const themeSettings = await db('theme_settings').first();
+        console.log('[Pages Controller] Theme settings:', themeSettings ? 'Encontrado' : 'No encontrado');
+
         const htmlToCompile = content || '';
+        console.log('[Pages Controller] Compilando CSS para contenido:', htmlToCompile.substring(0, 50) + '...');
+
         const compiledCss = await compileTailwindCSS(htmlToCompile, themeSettings || {});
+        console.log('[Pages Controller] CSS compilado length:', compiledCss ? compiledCss.length : 0);
+        if (compiledCss && compiledCss.length > 100) {
+            console.log('[Pages Controller] CSS (primeros 100 chars):', compiledCss.substring(0, 100));
+        }
 
         // Insertamos en SQLite. Knex se encarga de convertir el objeto 'fields' a JSON
         const [id] = await db('pages').insert({
