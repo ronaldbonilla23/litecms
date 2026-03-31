@@ -6,7 +6,6 @@ const CORE_URL = 'http://localhost:3000/api';
 
 export default function EngineRenderer() {
   const [htmlContent, setHtmlContent] = useState<string>('');
-  const [cssFileUrl, setCssFileUrl] = useState<string>('');
   const [currentSlug, setCurrentSlug] = useState<string>('/');
 
   useEffect(() => {
@@ -28,9 +27,22 @@ export default function EngineRenderer() {
           return;
         }
 
-        // 1. URL del archivo CSS compilado
-        if (page.id) {
-          setCssFileUrl(`http://localhost:3000/css/page-${page.id}.css`);
+        // 1. Inyectar CSS en el HEAD
+        const cssUrl = page.id ? `http://localhost:3000/css/page-${page.id}.css` : '';
+
+        // Remover CSS anterior si existe
+        const existingLink = document.getElementById('page-css');
+        if (existingLink) {
+          existingLink.remove();
+        }
+
+        // Crear nuevo link en el head
+        if (cssUrl) {
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = cssUrl;
+          link.id = 'page-css';
+          document.head.appendChild(link);
         }
 
         // 2. Compilar HTML con Handlebars
@@ -77,11 +89,17 @@ export default function EngineRenderer() {
     loadPage();
   }, [currentSlug]);
 
+  // Cleanup al desmontar
+  useEffect(() => {
+    return () => {
+      const existingLink = document.getElementById('page-css');
+      if (existingLink) {
+        existingLink.remove();
+      }
+    };
+  }, []);
+
   return (
-    <>
-      {/* CSS externo compilado */}
-      {cssFileUrl && <link rel="stylesheet" href={cssFileUrl} />}
-      <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
-    </>
+    <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
   );
 }
