@@ -11,8 +11,9 @@ export default function EngineRenderer() {
   useEffect(() => {
     // Obtener el slug de la URL actual
     const path = window.location.pathname;
-    const slug = path === '/' ? '/' : path.replace(/^\/|\/$/g, '');
-    setCurrentSlug(slug || '/');
+    // Normalizar slug: '/' para home, o el path sin slashes iniciales/finales
+    const slug = path === '/' ? '/' : path.replace(/^\/|\/$/g, '') || '/';
+    setCurrentSlug(slug);
   }, []);
 
   useEffect(() => {
@@ -47,8 +48,9 @@ export default function EngineRenderer() {
         scriptCDN.src = "https://cdn.tailwindcss.com";
         document.head.appendChild(scriptCDN);
 
-        // 3. Obtener la página por slug
-        const { data: page } = await axios.get(`${CORE_URL}/pages/slug/${currentSlug}`);
+        // 3. Obtener la página por slug (codificar para manejar '/' correctamente)
+        const encodedSlug = encodeURIComponent(currentSlug);
+        const { data: page } = await axios.get(`${CORE_URL}/pages/slug/${encodedSlug}`);
 
         if (!page) {
           setHtmlContent('<div class="text-white p-8 text-center">Página no encontrada (404)</div>');
