@@ -6,8 +6,8 @@ const CORE_URL = 'http://localhost:3000/api';
 
 export default function EngineRenderer() {
   const [htmlContent, setHtmlContent] = useState<string>('<div style="color:white; padding: 2rem;">Cargando...</div>');
-  const [cssContent, setCssContent] = useState<string>('');
   const [currentSlug, setCurrentSlug] = useState<string>('/');
+  const [themeSettings, setThemeSettings] = useState<any>(null);
 
   useEffect(() => {
     // Obtener el slug de la URL actual
@@ -21,7 +21,40 @@ export default function EngineRenderer() {
 
     const initEngine = async () => {
       try {
-        // 1. Obtener la página por slug
+        // 1. Obtener theme settings
+        const { data: settings } = await axios.get(`${CORE_URL}/theme-settings`);
+        setThemeSettings(settings);
+
+        // 2. Inyectar configuración de Tailwind
+        const scriptConfig = document.createElement('script');
+        scriptConfig.innerHTML = `
+          tailwind = {
+            config: {
+              theme: {
+                extend: {
+                  colors: {
+                    primary: '${settings.primary_color || '#C2F86C'}',
+                    secondary: '${settings.secondary_color || '#3B82F6'}',
+                    accent: '${settings.accent_color || '#F59E0B'}',
+                    fondo: '${settings.background_color || '#141414'}'
+                  },
+                  fontFamily: {
+                    sans: ['${settings.body_font || 'Inter'}', 'sans-serif'],
+                    header: ['${settings.header_font || 'Plus Jakarta Sans'}', 'sans-serif']
+                  }
+                }
+              }
+            }
+          }
+        `;
+        document.head.appendChild(scriptConfig);
+
+        // 3. Inyectar Tailwind CDN
+        const scriptCDN = document.createElement('script');
+        scriptCDN.src = "https://cdn.tailwindcss.com";
+        document.head.appendChild(scriptCDN);
+
+        // 4. Obtener la página por slug
         const encodedSlug = encodeURIComponent(currentSlug);
         const { data: page } = await axios.get(`${CORE_URL}/pages/slug/${encodedSlug}`);
 
@@ -30,7 +63,7 @@ export default function EngineRenderer() {
           return;
         }
 
-        // 2. Compilar y renderizar header, content y footer
+        // 5. Compilar y renderizar header, content y footer
         let finalHtml = '';
 
         // Renderizar header si existe
@@ -47,7 +80,6 @@ export default function EngineRenderer() {
           const contentTpl = Handlebars.compile(page.content);
           finalHtml += contentTpl({ site: { name: 'LiteCMS' }, page });
         } else if (page.fields && typeof page.fields === 'string') {
-          // Soporte para contenido legacy (Craft.js)
           finalHtml += page.fields;
         }
 
@@ -58,11 +90,6 @@ export default function EngineRenderer() {
             const footerTpl = Handlebars.compile(footerTemplate.content);
             finalHtml += footerTpl({ site: { name: 'LiteCMS' }, page });
           }
-        }
-
-        // 3. Inyectar CSS compilado desde el backend
-        if (page.compiled_css) {
-          setCssContent(page.compiled_css);
         }
 
         setHtmlContent(finalHtml || '<div style="color:white; padding: 2rem;">Contenido vacío</div>');
@@ -113,8 +140,6 @@ export default function EngineRenderer() {
 
   return (
     <>
-      {/* Inyectamos el CSS estático compilado en el backend */}
-      <style dangerouslySetInnerHTML={{ __html: cssContent }} />
       <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
     </>
   );
