@@ -52,8 +52,8 @@ export const compileTailwindCSS = async (htmlContent: string, themeSettings: any
  */
 const saveCssToFile = (css: string, pageId: string): void => {
   try {
-    // Ruta al directorio público de CSS
-    const publicCssDir = path.join(__dirname, '../../../public/css');
+    // Ruta al directorio público de CSS (usando process.cwd() para mayor confiabilidad)
+    const publicCssDir = path.join(process.cwd(), 'public', 'css');
 
     // Crear directorio si no existe
     if (!fs.existsSync(publicCssDir)) {
