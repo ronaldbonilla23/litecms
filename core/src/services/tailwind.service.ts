@@ -35,9 +35,15 @@ export const compileTailwindCSS = async (htmlContent: string, themeSettings: any
 
     const css = result.css;
 
+    console.log('[Tailwind] CSS generado:', css ? css.length : 0, 'bytes');
+    console.log('[Tailwind] Page ID:', pageId);
+
     // Guardar CSS en archivo si hay pageId
-    if (pageId && css) {
+    if (pageId && css && css.length > 0) {
+      console.log('[Tailwind] Intentando guardar CSS en archivo...');
       saveCssToFile(css, pageId);
+    } else {
+      console.log('[Tailwind] No se guarda el archivo: pageId=', pageId, 'css.length=', css ? css.length : 0);
     }
 
     return css;
