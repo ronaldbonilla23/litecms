@@ -131,15 +131,13 @@ export default function PageEditor() {
                     <button
                         onClick={() => setPageData({ ...pageData, status: pageData.status === 'draft' ? 'published' : 'draft' })}
                         className={`relative w-full h-14 rounded-xl border transition-all duration-300 ${pageData.status === 'published'
-                                ? 'bg-[#C2F86C]/10 border-[#C2F86C]'
-                                : 'bg-[#1a1a1a] border-gray-700'
+                            ? 'bg-[#C2F86C]/10 border-[#C2F86C]'
+                            : 'bg-[#1a1a1a] border-gray-700'
                             }`}
                     >
                         <div className="absolute inset-0 flex items-center justify-between px-4">
                             <div className="flex items-center gap-3">
-                                <span className={`text-2xl ${pageData.status === 'published' ? 'opacity-100' : 'opacity-30'}`}>
-                                    ✅
-                                </span>
+                                <i className={`fi fi-rr-check-circle text-2xl ${pageData.status === 'published' ? 'opacity-100 text-[#C2F86C]' : 'opacity-30 text-gray-500'}`}></i>
                                 <span className={`text-xs font-bold uppercase tracking-widest ${pageData.status === 'published' ? 'text-[#C2F86C]' : 'text-gray-500'
                                     }`}>
                                     Published
@@ -150,19 +148,17 @@ export default function PageEditor() {
                                     }`}>
                                     Draft
                                 </span>
-                                <span className={`text-2xl ${pageData.status === 'draft' ? 'opacity-100' : 'opacity-30'}`}>
-                                    📝
-                                </span>
+                                <i className={`fi fi-rr-pencil text-2xl ${pageData.status === 'draft' ? 'opacity-100 text-white' : 'opacity-30 text-gray-500'}`}></i>
                             </div>
                         </div>
                         <div className={`absolute top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center ${pageData.status === 'published'
-                                ? 'right-1 bg-[#C2F86C]'
-                                : 'left-1 bg-gray-600'
+                            ? 'right-1 bg-[#C2F86C]'
+                            : 'left-1 bg-gray-600'
                             }`}>
                             {pageData.status === 'published' ? (
                                 <i className="fi fi-rr-check text-black text-sm"></i>
                             ) : (
-                                <i className="fi fi-rr-edit text-black text-sm"></i>
+                                <i className="fi fi-rr-pencil text-black text-sm"></i>
                             )}
                         </div>
                     </button>
