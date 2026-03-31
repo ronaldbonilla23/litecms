@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import api from '../api/axios';
 
-const CORE_URL = '/api';
+const CORE_URL = '';
 
 export default function PageEditor() {
     const [templates, setTemplates] = useState<any[]>([]);
