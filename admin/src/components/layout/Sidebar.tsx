@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 export function Sidebar() {
   return (
     <div className="w-24 flex flex-col justify-start p-4 h-full">
-      <aside className="w-16 bg-[#141414] border border-white/10 rounded-full flex flex-col items-center py-4 shadow-xl sticky top-4">
+      <aside className="w-16 bg-[#141414] border border-white/10 rounded-full flex flex-col items-center py-4 shadow-xl sticky top-[84px]">
         <nav className="flex flex-col gap-6 mt-6">
           <NavLink
             to="/dashboard"
