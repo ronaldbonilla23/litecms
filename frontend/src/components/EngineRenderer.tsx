@@ -34,11 +34,20 @@ export default function EngineRenderer() {
         // 2. Compilar HTML con Handlebars
         let finalHtml = '';
 
+        // Contexto para las plantillas
+        const templateContext = {
+          page,
+          site: {
+            name: 'LiteCMS',
+            url: window.location.origin
+          }
+        };
+
         // Header
         if (page.header_id) {
           const { data: header } = await axios.get(`${CORE_URL}/templates/${page.header_id}`);
           if (header?.content) {
-            finalHtml += Handlebars.compile(header.content)({ page });
+            finalHtml += Handlebars.compile(header.content)(templateContext);
             // Agregar CSS del header si existe
             if (header.compiled_css) {
               allCss += '\n' + header.compiled_css;
@@ -48,14 +57,14 @@ export default function EngineRenderer() {
 
         // Contenido principal
         if (page.content) {
-          finalHtml += Handlebars.compile(page.content)({ page });
+          finalHtml += Handlebars.compile(page.content)(templateContext);
         }
 
         // Footer
         if (page.footer_id) {
           const { data: footer } = await axios.get(`${CORE_URL}/templates/${page.footer_id}`);
           if (footer?.content) {
-            finalHtml += Handlebars.compile(footer.content)({ page });
+            finalHtml += Handlebars.compile(footer.content)(templateContext);
             // Agregar CSS del footer si existe
             if (footer.compiled_css) {
               allCss += '\n' + footer.compiled_css;
