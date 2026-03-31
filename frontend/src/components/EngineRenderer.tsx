@@ -28,10 +28,8 @@ export default function EngineRenderer() {
           return;
         }
 
-        // 1. Inyectar CSS compilado desde la base de datos
-        if (page.compiled_css) {
-          setCssContent(page.compiled_css);
-        }
+        // 1. Combinar CSS: página + header + footer
+        let allCss = page.compiled_css || '';
 
         // 2. Compilar HTML con Handlebars
         let finalHtml = '';
@@ -41,6 +39,10 @@ export default function EngineRenderer() {
           const { data: header } = await axios.get(`${CORE_URL}/templates/${page.header_id}`);
           if (header?.content) {
             finalHtml += Handlebars.compile(header.content)({ page });
+            // Agregar CSS del header si existe
+            if (header.compiled_css) {
+              allCss += '\n' + header.compiled_css;
+            }
           }
         }
 
@@ -54,9 +56,15 @@ export default function EngineRenderer() {
           const { data: footer } = await axios.get(`${CORE_URL}/templates/${page.footer_id}`);
           if (footer?.content) {
             finalHtml += Handlebars.compile(footer.content)({ page });
+            // Agregar CSS del footer si existe
+            if (footer.compiled_css) {
+              allCss += '\n' + footer.compiled_css;
+            }
           }
         }
 
+        // 3. Inyectar CSS combinado
+        setCssContent(allCss);
         setHtmlContent(finalHtml || '<div class="p-8 text-center">Sin contenido</div>');
 
       } catch (error: any) {
