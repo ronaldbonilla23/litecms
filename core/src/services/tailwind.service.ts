@@ -1,49 +1,38 @@
 // tailwind.service.ts
-// Servicio de compilación Tailwind CSS - Optimizado para producción
+// Servicio de compilación Tailwind CSS - Usando @tailwindcss/postcss (v4)
 
 export const compileTailwindCSS = async (htmlContent: string, themeSettings: any): Promise<string> => {
   try {
     const postcss = require('postcss');
-    // Usamos tailwindcss directamente (v4)
-    const tailwindcss = require('tailwindcss');
+    // Usar @tailwindcss/postcss en lugar de tailwindcss directamente
+    const tailwindcss = require('@tailwindcss/postcss');
     const autoprefixer = require('autoprefixer');
 
     // Extraer clases únicas del HTML
     const classes = extractClasses(htmlContent);
-
     console.log('[Tailwind Service] Clases encontradas:', classes.length);
 
-    const config = {
-      content: [{ raw: htmlContent, extension: 'html' }],
-      theme: {
-        extend: {
-          colors: {
-            primary: themeSettings.primary_color || '#C2F86C',
-            secondary: themeSettings.secondary_color || '#3B82F6',
-            accent: themeSettings.accent_color || '#F59E0B',
-            fondo: themeSettings.background_color || '#141414',
-          },
-          fontFamily: {
-            sans: [themeSettings.body_font || 'Inter', 'sans-serif'],
-            header: [themeSettings.header_font || 'Plus Jakarta Sans', 'sans-serif'],
-          },
-        },
-      },
-      // Solo generar CSS para las clases usadas
-      corePlugins: {
-        preflight: false, // Evitar reset CSS que puede causar conflictos
-      },
-    };
+    // Configurar tema personalizado
+    const customTheme = Object.entries({
+      '--color-primary': themeSettings.primary_color || '#C2F86C',
+      '--color-secondary': themeSettings.secondary_color || '#3B82F6',
+      '--color-accent': themeSettings.accent_color || '#F59E0B',
+      '--color-fondo': themeSettings.background_color || '#141414',
+      '--font-sans': `${themeSettings.body_font || 'Inter'}, sans-serif`,
+      '--font-header': `${themeSettings.header_font || 'Plus Jakarta Sans'}, sans-serif`,
+    }).map(([key, value]) => `${key}: ${value};`).join('\n      ');
 
-    // CSS con directivas de Tailwind v3 (compatible con v4 en modo compatible)
+    // CSS con Tailwind v4 - usando @import y @theme
     const cssInput = `
-      @tailwind base;
-      @tailwind components;
-      @tailwind utilities;
+      @import "tailwindcss";
+      
+      @theme {
+        ${customTheme}
+      }
     `;
 
     const result = await postcss([
-      tailwindcss(config),
+      tailwindcss.default || tailwindcss,
       autoprefixer
     ]).process(cssInput, { from: undefined });
 

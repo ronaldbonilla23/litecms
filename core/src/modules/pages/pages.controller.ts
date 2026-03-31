@@ -124,8 +124,11 @@ export const updatePage = async (req: AuthRequest, res: Response, next: NextFunc
         // Compilar CSS si el contenido cambió
         if (content !== undefined) {
             updateData.content = content;
+            console.log('[Pages Controller] Compilando CSS para contenido actualizado...');
             const themeSettings = await db('theme_settings').first();
+            console.log('[Pages Controller] Theme settings:', themeSettings ? 'Encontrado' : 'No encontrado');
             const compiledCss = await compileTailwindCSS(content || '', themeSettings || {});
+            console.log('[Pages Controller] CSS compilado length:', compiledCss ? compiledCss.length : 0);
             updateData.compiled_css = compiledCss;
         }
 
