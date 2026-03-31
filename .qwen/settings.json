@@ -14,7 +14,8 @@
       "Bash(xargs *)",
       "Bash(tee *)",
       "Bash(tail *)",
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(rm *)"
     ]
   },
   "$version": 3
