@@ -119,6 +119,23 @@ export const updatePage = async (req: AuthRequest, res: Response, next: NextFunc
     }
 };
 
+export const deletePage = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        const deletedCount = await db('pages').where({ id }).delete();
+
+        if (deletedCount === 0) {
+            res.status(404).json({ error: 'La página solicitada no existe' });
+            return;
+        }
+
+        res.json({ message: 'Página eliminada con éxito' });
+    } catch (error) {
+        next(error);
+    }
+};
+
 export const getPageById = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { id } = req.params;
