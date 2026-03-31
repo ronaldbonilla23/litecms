@@ -4,7 +4,7 @@ import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { MediaLibrary } from './pages/MediaLibrary';
 import { Pages } from './pages/Pages';
-import { PageEditor } from './pages/PageEditor';
+import PageEditor from './pages/PageEditor';
 import { AdminLayout } from './components/layout/AdminLayout';
 import ThemeSettings from './pages/ThemeSettings';
 import TemplateEditor from './pages/TemplateEditor';
