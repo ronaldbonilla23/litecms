@@ -66,8 +66,10 @@ function extractClasses(html: string): string[] {
   let match;
 
   while ((match = classRegex.exec(html)) !== null) {
-    const classNames = match[1].split(' ');
-    classNames.forEach(cls => classes.add(cls));
+    if (match[1]) {
+      const classNames = match[1].split(' ');
+      classNames.forEach(cls => classes.add(cls));
+    }
   }
 
   return Array.from(classes);
