@@ -70,9 +70,40 @@ export default function EngineRenderer() {
       } catch (error: any) {
         console.error('Error en el Motor:', error);
         if (error.response?.status === 404) {
-          setHtmlContent('<div style="color:white; padding: 2rem; text-align:center;"><h1 style="font-size:2rem; margin-bottom:1rem;">404</h1><p>Página no encontrada</p></div>');
+          setHtmlContent(`
+            <div class="min-h-screen bg-[#141414] text-white flex items-center justify-center p-8">
+              <div class="text-center max-w-2xl">
+                <h1 class="text-6xl font-bold mb-4" style="color: #C2F86C;">404</h1>
+                <h2 class="text-2xl mb-6">Página no encontrada</h2>
+                <p class="text-gray-400 mb-8">
+                  No hay ninguna página publicada con la ruta "${currentSlug}".
+                </p>
+                <div class="bg-[#1a1a1a] border border-white/10 rounded-xl p-6 text-left">
+                  <h3 class="font-bold mb-3" style="color: #C2F86C;">¿Cómo solucionar esto?</h3>
+                  <ol class="space-y-2 text-sm text-gray-400">
+                    <li class="flex items-start gap-2">
+                      <span class="text-[#C2F86C] font-bold">1.</span>
+                      <span>Ve al Admin Panel → Pages</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <span class="text-[#C2F86C] font-bold">2.</span>
+                      <span>Crea una nueva página con slug <code class="bg-[#0e0e0e] px-2 py-0.5 rounded">/</code> para el Home</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <span class="text-[#C2F86C] font-bold">3.</span>
+                      <span>Cambia el estado a <strong>Published</strong></span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <span class="text-[#C2F86C] font-bold">4.</span>
+                      <span>Recarga esta página</span>
+                    </li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          `);
         } else {
-          setHtmlContent('<div style="color:red; padding: 2rem;">Error de conexión con el Core.</div>');
+          setHtmlContent('<div class="min-h-screen bg-[#141414] text-white flex items-center justify-center p-8"><div class="text-center"><h1 class="text-4xl font-bold mb-4 text-red-500">Error de conexión</h1><p class="text-gray-400">No se pudo conectar con el Core API en http://localhost:3000</p></div></div>');
         }
       }
     };
