@@ -9,6 +9,7 @@ export const createPage = async (req: AuthRequest, res: Response, next: NextFunc
         const validation = PageSchema.safeParse(req.body);
 
         if (!validation.success) {
+            console.error('[Pages Controller] Validation error:', validation.error.flatten().fieldErrors);
             res.status(400).json({
                 error: 'Datos inválidos',
                 details: validation.error.flatten().fieldErrors
@@ -32,6 +33,7 @@ export const createPage = async (req: AuthRequest, res: Response, next: NextFunc
 
         res.status(201).json({ message: 'Página creada', id });
     } catch (error: any) {
+        console.error('[Pages Controller] Error:', error.message);
         if (error.message.includes('UNIQUE constraint failed')) {
             res.status(400).json({ error: 'El slug ya está en uso' });
             return;

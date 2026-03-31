@@ -35,12 +35,11 @@ export default function PageEditor() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            // Aquí enviaremos los datos al backend (Endpoint por crear/actualizar)
             await api.post(`${CORE_URL}/pages`, pageData);
             alert('Página guardada con éxito 🚀');
-        } catch (error) {
-            console.error('Error al guardar la página:', error);
-            alert('Error al guardar.');
+        } catch (error: any) {
+            console.error('[PageEditor] Error:', error);
+            alert(`Error al guardar: ${error.response?.data?.error || error.message}`);
         } finally {
             setIsSaving(false);
         }
