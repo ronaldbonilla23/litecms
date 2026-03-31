@@ -66,13 +66,26 @@ export default function PageEditor() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
+            // Normalizar slug: '/' para home, o asegurar que empiece con '/'
+            let normalizedSlug = pageData.slug.trim();
+            if (!normalizedSlug || normalizedSlug === '/') {
+                normalizedSlug = '/';
+            } else if (!normalizedSlug.startsWith('/')) {
+                normalizedSlug = '/' + normalizedSlug;
+            }
+
+            const pageDataToSave = {
+                ...pageData,
+                slug: normalizedSlug
+            };
+
             if (id) {
                 // Actualizar página existente
-                await api.put(`${CORE_URL}/pages/${id}`, pageData);
+                await api.put(`${CORE_URL}/pages/${id}`, pageDataToSave);
                 alert('Página actualizada 🚀');
             } else {
                 // Crear nueva página
-                await api.post(`${CORE_URL}/pages`, pageData);
+                await api.post(`${CORE_URL}/pages`, pageDataToSave);
                 alert('Página creada con éxito 🚀');
             }
             navigate('/dashboard/pages');
@@ -114,15 +127,50 @@ export default function PageEditor() {
                 </div>
 
                 <div className="flex flex-col">
-                    <label className="text-[10px] text-gray-500 uppercase mb-2">Estado</label>
-                    <select
-                        value={pageData.status}
-                        onChange={(e) => setPageData({ ...pageData, status: e.target.value })}
-                        className="bg-[#141414] border border-gray-800 text-white px-3 py-2 rounded text-sm focus:border-[#C2F86C] outline-none"
+                    <label className="text-[10px] text-gray-500 uppercase mb-3">Estado</label>
+                    <button
+                        onClick={() => setPageData({ ...pageData, status: pageData.status === 'draft' ? 'published' : 'draft' })}
+                        className={`relative w-full h-14 rounded-xl border transition-all duration-300 ${pageData.status === 'published'
+                                ? 'bg-[#C2F86C]/10 border-[#C2F86C]'
+                                : 'bg-[#1a1a1a] border-gray-700'
+                            }`}
                     >
-                        <option value="draft">📝 Draft (Borrador)</option>
-                        <option value="published">✅ Published (Publicado)</option>
-                    </select>
+                        <div className="absolute inset-0 flex items-center justify-between px-4">
+                            <div className="flex items-center gap-3">
+                                <span className={`text-2xl ${pageData.status === 'published' ? 'opacity-100' : 'opacity-30'}`}>
+                                    ✅
+                                </span>
+                                <span className={`text-xs font-bold uppercase tracking-widest ${pageData.status === 'published' ? 'text-[#C2F86C]' : 'text-gray-500'
+                                    }`}>
+                                    Published
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <span className={`text-xs font-bold uppercase tracking-widest ${pageData.status === 'draft' ? 'text-white' : 'text-gray-500'
+                                    }`}>
+                                    Draft
+                                </span>
+                                <span className={`text-2xl ${pageData.status === 'draft' ? 'opacity-100' : 'opacity-30'}`}>
+                                    📝
+                                </span>
+                            </div>
+                        </div>
+                        <div className={`absolute top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center ${pageData.status === 'published'
+                                ? 'right-1 bg-[#C2F86C]'
+                                : 'left-1 bg-gray-600'
+                            }`}>
+                            {pageData.status === 'published' ? (
+                                <i className="fi fi-rr-check text-black text-sm"></i>
+                            ) : (
+                                <i className="fi fi-rr-edit text-black text-sm"></i>
+                            )}
+                        </div>
+                    </button>
+                    <span className="text-[10px] text-gray-600 mt-2">
+                        {pageData.status === 'published'
+                            ? '🌐 Página visible en el frontend público'
+                            : '🔒 Página solo visible para administradores'}
+                    </span>
                 </div>
 
                 <div className="h-px bg-gray-800 my-4"></div>
