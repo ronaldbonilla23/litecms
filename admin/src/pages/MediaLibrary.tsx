@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import api from '../api/axios';
+import toast from 'react-hot-toast';
 
 interface MediaItem {
     id: number;
@@ -41,8 +42,9 @@ export const MediaLibrary = () => {
         try {
             await api.post('/media/upload', formData);
             fetchMedia(); // Recargar
+            toast.success('Archivo subido 🚀');
         } catch (err) {
-            alert("Error al subir archivo");
+            toast.error("Error al subir archivo");
         }
     };
 
@@ -65,15 +67,16 @@ export const MediaLibrary = () => {
             await api.delete(`/media/${id}`);
             if (selectedItem?.id === id) setSelectedItem(null);
             fetchMedia();
+            toast.success('Imagen eliminada');
         } catch (err) {
-            alert("Error al eliminar");
+            toast.error("Error al eliminar");
         }
     };
 
     const copyUrl = (e: React.MouseEvent, filename: string) => {
         e.stopPropagation();
         navigator.clipboard.writeText(`http://localhost:3000/uploads/${filename}`);
-        alert("URL copiada!");
+        toast.success('URL copiada!');
     };
 
     const openPreview = (item: MediaItem) => {
@@ -85,11 +88,11 @@ export const MediaLibrary = () => {
         if (!selectedItem) return;
         try {
             await api.put(`/media/${selectedItem.id}/seo`, seoData);
-            alert("SEO Actualizado 🚀");
+            toast.success('SEO Actualizado 🚀');
             fetchMedia(); // Recargar para ver cambios
             setSelectedItem(null); // Cerrar
         } catch (err) {
-            alert("Error al guardar SEO");
+            toast.error("Error al guardar SEO");
         }
     };
 
@@ -133,7 +136,7 @@ export const MediaLibrary = () => {
 
                 {/* Overlay de Drag & Drop */}
                 {isDragging && (
-                    <div 
+                    <div
                         className="fixed inset-0 z-50 flex items-center justify-center bg-[#0e0e0e]/90 backdrop-blur-sm border-4 border-dashed border-[#C2F86C] m-8 rounded-[3rem]"
                         onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                         onDragLeave={() => setIsDragging(false)}

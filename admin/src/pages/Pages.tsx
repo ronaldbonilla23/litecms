@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import toast from 'react-hot-toast';
 
 interface Page {
   id: number;
@@ -34,8 +35,9 @@ export function Pages() {
     try {
       await api.delete(`/pages/${id}`);
       fetchPages();
+      toast.success('Página eliminada');
     } catch (err) {
-      alert("Error al eliminar la página");
+      toast.error("Error al eliminar la página");
     }
   };
 
@@ -46,7 +48,7 @@ export function Pages() {
           <h2 className="text-white font-headline text-4xl font-black tracking-tighter">Site Pages</h2>
           <p className="text-[#adaaaa] text-xs font-bold uppercase tracking-widest mt-2 px-1 border-l-2 border-primary ml-1">Manage your content</p>
         </div>
-        
+
         <button
           onClick={() => navigate('/dashboard/pages/new')}
           className="bg-primary text-black font-black px-6 py-3 rounded-2xl flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20"
@@ -90,24 +92,23 @@ export function Pages() {
                     <span className="text-[#adaaaa] font-mono text-sm">/{page.slug}</span>
                   </td>
                   <td className="px-8 py-6">
-                    <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${
-                      page.status === 'published' 
-                        ? 'bg-primary/10 border-primary/20 text-primary' 
-                        : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500'
-                    }`}>
+                    <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${page.status === 'published'
+                      ? 'bg-primary/10 border-primary/20 text-primary'
+                      : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500'
+                      }`}>
                       {page.status}
                     </span>
                   </td>
                   <td className="px-8 py-6 text-right">
                     <div className="flex justify-end gap-3">
-                      <button 
+                      <button
                         onClick={() => navigate(`/dashboard/pages/edit/${page.id}`)}
                         className="w-10 h-10 flex items-center justify-center bg-white/5 rounded-xl text-white hover:bg-primary hover:text-black transition-all"
                         title="Edit Page"
                       >
                         <i className="fi fi-rr-edit text-lg mt-1"></i>
                       </button>
-                      <button 
+                      <button
                         onClick={() => deletePage(page.id)}
                         className="w-10 h-10 flex items-center justify-center bg-white/5 rounded-xl text-white hover:bg-red-500 transition-all"
                         title="Delete Page"

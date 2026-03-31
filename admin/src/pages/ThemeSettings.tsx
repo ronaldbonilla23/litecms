@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 // Lista de fuentes disponibles
 const FONT_OPTIONS = [
@@ -152,10 +153,10 @@ export default function ThemeSettings() {
         setIsSaving(true);
         try {
             await axios.put('/api/theme-settings', settings);
-            alert('Design System Deployado con éxito 🚀');
+            toast.success('Design System Deployado 🚀');
         } catch (error) {
             console.error('Error al guardar el Design System:', error);
-            alert('Hubo un error al guardar.');
+            toast.error('Hubo un error al guardar.');
         } finally {
             setIsSaving(false);
         }

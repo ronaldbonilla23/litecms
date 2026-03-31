@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import api from '../api/axios';
+import toast from 'react-hot-toast';
 
 const API_URL = '/templates';
 
@@ -49,16 +50,16 @@ export default function TemplateEditor() {
       if (activeTemplate.id) {
         // Actualizar plantilla existente
         await api.put(`${API_URL}/${activeTemplate.id}`, activeTemplate);
-        alert('Plantilla actualizada 🚀');
+        toast.success('Plantilla actualizada 🚀');
       } else {
         // Crear nueva plantilla
         await api.post(API_URL, activeTemplate);
-        alert('Plantilla creada y desplegada 🚀');
+        toast.success('Plantilla creada 🚀');
       }
       fetchTemplates();
     } catch (error) {
       console.error('Error al guardar:', error);
-      alert('Hubo un error al guardar la plantilla.');
+      toast.error('Error al guardar la plantilla.');
     } finally {
       setIsSaving(false);
     }
@@ -70,12 +71,12 @@ export default function TemplateEditor() {
 
     try {
       await api.delete(`${API_URL}/${activeTemplate.id}`);
-      alert('Plantilla eliminada');
+      toast.success('Plantilla eliminada');
       setActiveTemplate(null);
       fetchTemplates();
     } catch (error) {
       console.error('Error al eliminar:', error);
-      alert('Hubo un error al eliminar la plantilla.');
+      toast.error('Error al eliminar la plantilla.');
     }
   };
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
 import api from '../api/axios';
+import toast from 'react-hot-toast';
 
 const CORE_URL = '';
 
@@ -37,7 +38,7 @@ export default function PageEditor() {
                     });
                 } catch (error) {
                     console.error('Error al cargar página:', error);
-                    alert('Error al cargar la página');
+                    toast.error('Error al cargar la página');
                 } finally {
                     setIsLoading(false);
                 }
@@ -82,16 +83,16 @@ export default function PageEditor() {
             if (id) {
                 // Actualizar página existente
                 await api.put(`${CORE_URL}/pages/${id}`, pageDataToSave);
-                alert('Página actualizada 🚀');
+                toast.success('Página actualizada 🚀');
             } else {
                 // Crear nueva página
                 await api.post(`${CORE_URL}/pages`, pageDataToSave);
-                alert('Página creada con éxito 🚀');
+                toast.success('Página creada con éxito 🚀');
             }
             navigate('/dashboard/pages');
         } catch (error: any) {
             console.error('[PageEditor] Error:', error);
-            alert(`Error al guardar: ${error.response?.data?.error || error.message}`);
+            toast.error(error.response?.data?.error || error.message);
         } finally {
             setIsSaving(false);
         }

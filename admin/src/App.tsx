@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { MediaLibrary } from './pages/MediaLibrary';
@@ -22,6 +23,40 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
 function App() {
   return (
     <Router>
+      {/* Toaster Global - Notificaciones Toast */}
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          style: {
+            background: '#1a1a1a',
+            color: '#ffffff',
+            border: '1px solid #333',
+            fontFamily: 'monospace',
+            fontSize: '14px',
+            borderRadius: '12px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+          },
+          success: {
+            iconTheme: {
+              primary: '#C2F86C',
+              secondary: '#141414',
+            },
+            style: {
+              border: '1px solid rgba(194, 248, 108, 0.3)',
+            }
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#141414',
+            },
+            style: {
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+            }
+          }
+        }}
+      />
+
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route
