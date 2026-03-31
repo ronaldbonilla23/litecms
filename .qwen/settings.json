@@ -15,7 +15,9 @@
       "Bash(tee *)",
       "Bash(tail *)",
       "Bash(node *)",
-      "Bash(rm *)"
+      "Bash(rm *)",
+      "Bash(grep *)",
+      "Bash(python3 *)"
     ]
   },
   "$version": 3

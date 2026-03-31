@@ -40,6 +40,9 @@ app.use('/api/templates', templatesRoutes);
 // Servir archivos estáticos de forma pública
 app.use('/uploads', express.static(path.join(__dirname, '../../content/uploads')));
 
+// Servir archivos CSS compilados
+app.use('/css', express.static(path.join(__dirname, '../../public/css')));
+
 
 // Ruta de prueba para forzar un error y validar nuestra arquitectura
 app.get('/api/error-test', (req: Request, res: Response, next: NextFunction) => {

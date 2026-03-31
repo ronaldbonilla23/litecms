@@ -27,26 +27,28 @@ export const createPage = async (req: AuthRequest, res: Response, next: NextFunc
         const htmlToCompile = content || '';
         console.log('[Pages Controller] Compilando CSS para contenido:', htmlToCompile.substring(0, 50) + '...');
 
-        const compiledCss = await compileTailwindCSS(htmlToCompile, themeSettings || {});
-        console.log('[Pages Controller] CSS compilado length:', compiledCss ? compiledCss.length : 0);
-        if (compiledCss && compiledCss.length > 100) {
-            console.log('[Pages Controller] CSS (primeros 100 chars):', compiledCss.substring(0, 100));
-        }
-
-        // Insertamos en SQLite. Knex se encarga de convertir el objeto 'fields' a JSON
+        // Insertamos PRIMERO para obtener el ID
         const [id] = await db('pages').insert({
             title,
             slug,
             fields: JSON.stringify(fields || {}),
             content: content || null,
-            compiled_css: compiledCss || null,
             header_id: header_id || null,
             footer_id: footer_id || null,
             status: status || 'draft',
-            author_id: (req.user as any)?.id // Tomamos el ID del administrador del token
+            author_id: (req.user as any)?.id
         });
 
+        // Compilar CSS y guardar en archivo DESPUÉS de tener el ID
+        const compiledCss = await compileTailwindCSS(htmlToCompile, themeSettings || {}, String(id));
+        console.log('[Pages Controller] CSS compilado length:', compiledCss ? compiledCss.length : 0);
         console.log('[Pages Controller] Página creada con ID:', id);
+
+        // Actualizar la página con el CSS compilado
+        if (compiledCss && compiledCss.length > 0) {
+            await db('pages').where({ id }).update({ compiled_css: compiledCss });
+        }
+
         res.status(201).json({ message: 'Página creada', id });
     } catch (error: any) {
         console.error('[Pages Controller] Error:', error.message);
@@ -127,7 +129,7 @@ export const updatePage = async (req: AuthRequest, res: Response, next: NextFunc
             console.log('[Pages Controller] Compilando CSS para contenido actualizado...');
             const themeSettings = await db('theme_settings').first();
             console.log('[Pages Controller] Theme settings:', themeSettings ? 'Encontrado' : 'No encontrado');
-            const compiledCss = await compileTailwindCSS(content || '', themeSettings || {});
+            const compiledCss = await compileTailwindCSS(content || '', themeSettings || {}, id);
             console.log('[Pages Controller] CSS compilado length:', compiledCss ? compiledCss.length : 0);
             updateData.compiled_css = compiledCss;
         }

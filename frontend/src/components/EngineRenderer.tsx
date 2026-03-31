@@ -6,7 +6,7 @@ const CORE_URL = 'http://localhost:3000/api';
 
 export default function EngineRenderer() {
   const [htmlContent, setHtmlContent] = useState<string>('');
-  const [cssContent, setCssContent] = useState<string>('');
+  const [cssFileUrl, setCssFileUrl] = useState<string>('');
   const [currentSlug, setCurrentSlug] = useState<string>('/');
 
   useEffect(() => {
@@ -28,8 +28,10 @@ export default function EngineRenderer() {
           return;
         }
 
-        // 1. Combinar CSS: página + header + footer
-        let allCss = page.compiled_css || '';
+        // 1. URL del archivo CSS compilado
+        if (page.id) {
+          setCssFileUrl(`http://localhost:3000/css/page-${page.id}.css`);
+        }
 
         // 2. Compilar HTML con Handlebars
         let finalHtml = '';
@@ -48,10 +50,6 @@ export default function EngineRenderer() {
           const { data: header } = await axios.get(`${CORE_URL}/templates/${page.header_id}`);
           if (header?.content) {
             finalHtml += Handlebars.compile(header.content)(templateContext);
-            // Agregar CSS del header si existe
-            if (header.compiled_css) {
-              allCss += '\n' + header.compiled_css;
-            }
           }
         }
 
@@ -65,15 +63,9 @@ export default function EngineRenderer() {
           const { data: footer } = await axios.get(`${CORE_URL}/templates/${page.footer_id}`);
           if (footer?.content) {
             finalHtml += Handlebars.compile(footer.content)(templateContext);
-            // Agregar CSS del footer si existe
-            if (footer.compiled_css) {
-              allCss += '\n' + footer.compiled_css;
-            }
           }
         }
 
-        // 3. Inyectar CSS combinado
-        setCssContent(allCss);
         setHtmlContent(finalHtml || '<div class="p-8 text-center">Sin contenido</div>');
 
       } catch (error: any) {
@@ -87,7 +79,8 @@ export default function EngineRenderer() {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: cssContent }} />
+      {/* CSS externo compilado */}
+      {cssFileUrl && <link rel="stylesheet" href={cssFileUrl} />}
       <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
     </>
   );
