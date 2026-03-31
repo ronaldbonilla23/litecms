@@ -15,6 +15,7 @@ export default function PageEditor() {
         slug: '/',
         header_id: '',
         footer_id: '',
+        status: 'draft',
         content: '<main class="max-w-6xl mx-auto p-8">\n  <h2 class="text-4xl text-primary font-bold">Contenido de la página</h2>\n  <p class="text-white mt-4">Usa clases de Tailwind aquí.</p>\n</main>'
     });
     const [isSaving, setIsSaving] = useState(false);
@@ -31,6 +32,7 @@ export default function PageEditor() {
                         slug: data.slug || '/',
                         header_id: data.header_id || '',
                         footer_id: data.footer_id || '',
+                        status: data.status || 'draft',
                         content: data.content || pageData.content
                     });
                 } catch (error) {
@@ -109,6 +111,18 @@ export default function PageEditor() {
                         className="bg-[#141414] border border-gray-800 text-[#C2F86C] px-3 py-2 rounded text-sm focus:border-[#C2F86C] outline-none"
                     />
                     <span className="text-[10px] text-gray-600 mt-1">Usa "/" para definir esta página como el Home (Index).</span>
+                </div>
+
+                <div className="flex flex-col">
+                    <label className="text-[10px] text-gray-500 uppercase mb-2">Estado</label>
+                    <select
+                        value={pageData.status}
+                        onChange={(e) => setPageData({ ...pageData, status: e.target.value })}
+                        className="bg-[#141414] border border-gray-800 text-white px-3 py-2 rounded text-sm focus:border-[#C2F86C] outline-none"
+                    >
+                        <option value="draft">📝 Draft (Borrador)</option>
+                        <option value="published">✅ Published (Publicado)</option>
+                    </select>
                 </div>
 
                 <div className="h-px bg-gray-800 my-4"></div>
