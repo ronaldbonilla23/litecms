@@ -13,7 +13,8 @@
       "Bash(sleep *)",
       "Bash(xargs *)",
       "Bash(tee *)",
-      "Bash(tail *)"
+      "Bash(tail *)",
+      "Bash(node *)"
     ]
   },
   "$version": 3

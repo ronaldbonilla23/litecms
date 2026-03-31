@@ -6,11 +6,11 @@ const CORE_URL = 'http://localhost:3000/api';
 
 export default function EngineRenderer() {
   const [htmlContent, setHtmlContent] = useState<string>('<div style="color:white; padding: 2rem;">Cargando...</div>');
+  const [cssContent, setCssContent] = useState<string>('');
   const [currentSlug, setCurrentSlug] = useState<string>('/');
   const [themeSettings, setThemeSettings] = useState<any>(null);
 
   useEffect(() => {
-    // Obtener el slug de la URL actual
     const path = window.location.pathname;
     const slug = path === '/' ? '/' : path.replace(/^\/|\/$/g, '') || '/';
     setCurrentSlug(slug);
@@ -25,36 +25,7 @@ export default function EngineRenderer() {
         const { data: settings } = await axios.get(`${CORE_URL}/theme-settings`);
         setThemeSettings(settings);
 
-        // 2. Inyectar configuración de Tailwind
-        const scriptConfig = document.createElement('script');
-        scriptConfig.innerHTML = `
-          tailwind = {
-            config: {
-              theme: {
-                extend: {
-                  colors: {
-                    primary: '${settings.primary_color || '#C2F86C'}',
-                    secondary: '${settings.secondary_color || '#3B82F6'}',
-                    accent: '${settings.accent_color || '#F59E0B'}',
-                    fondo: '${settings.background_color || '#141414'}'
-                  },
-                  fontFamily: {
-                    sans: ['${settings.body_font || 'Inter'}', 'sans-serif'],
-                    header: ['${settings.header_font || 'Plus Jakarta Sans'}', 'sans-serif']
-                  }
-                }
-              }
-            }
-          }
-        `;
-        document.head.appendChild(scriptConfig);
-
-        // 3. Inyectar Tailwind CDN
-        const scriptCDN = document.createElement('script');
-        scriptCDN.src = "https://cdn.tailwindcss.com";
-        document.head.appendChild(scriptCDN);
-
-        // 4. Obtener la página por slug
+        // 2. Obtener la página por slug
         const encodedSlug = encodeURIComponent(currentSlug);
         const { data: page } = await axios.get(`${CORE_URL}/pages/slug/${encodedSlug}`);
 
@@ -63,10 +34,44 @@ export default function EngineRenderer() {
           return;
         }
 
-        // 5. Compilar y renderizar header, content y footer
+        // 3. Usar CSS compilado del backend si existe
+        if (page.compiled_css && page.compiled_css.length > 0) {
+          console.log('[EngineRenderer] Usando CSS compilado:', page.compiled_css.length, 'bytes');
+          setCssContent(page.compiled_css);
+        } else {
+          console.log('[EngineRenderer] CSS compilado vacío, usando CDN fallback');
+          // Fallback: Inyectar Tailwind CDN con configuración del tema
+          const scriptConfig = document.createElement('script');
+          scriptConfig.innerHTML = `
+            tailwind = {
+              config: {
+                theme: {
+                  extend: {
+                    colors: {
+                      primary: '${settings.primary_color || '#C2F86C'}',
+                      secondary: '${settings.secondary_color || '#3B82F6'}',
+                      accent: '${settings.accent_color || '#F59E0B'}',
+                      fondo: '${settings.background_color || '#141414'}'
+                    },
+                    fontFamily: {
+                      sans: ['${settings.body_font || 'Inter'}', 'sans-serif'],
+                      header: ['${settings.header_font || 'Plus Jakarta Sans'}', 'sans-serif']
+                    }
+                  }
+                }
+              }
+            }
+          `;
+          document.head.appendChild(scriptConfig);
+
+          const scriptCDN = document.createElement('script');
+          scriptCDN.src = "https://cdn.tailwindcss.com";
+          document.head.appendChild(scriptCDN);
+        }
+
+        // 4. Compilar y renderizar header, content y footer
         let finalHtml = '';
 
-        // Renderizar header si existe
         if (page.header_id) {
           const { data: headerTemplate } = await axios.get(`${CORE_URL}/templates/${page.header_id}`);
           if (headerTemplate && headerTemplate.content) {
@@ -75,7 +80,6 @@ export default function EngineRenderer() {
           }
         }
 
-        // Renderizar contenido de la página
         if (page.content) {
           const contentTpl = Handlebars.compile(page.content);
           finalHtml += contentTpl({ site: { name: 'LiteCMS' }, page });
@@ -83,7 +87,6 @@ export default function EngineRenderer() {
           finalHtml += page.fields;
         }
 
-        // Renderizar footer si existe
         if (page.footer_id) {
           const { data: footerTemplate } = await axios.get(`${CORE_URL}/templates/${page.footer_id}`);
           if (footerTemplate && footerTemplate.content) {
@@ -130,7 +133,7 @@ export default function EngineRenderer() {
             </div>
           `);
         } else {
-          setHtmlContent('<div class="min-h-screen bg-[#141414] text-white flex items-center justify-center p-8"><div class="text-center"><h1 class="text-4xl font-bold mb-4 text-red-500">Error de conexión</h1><p class="text-gray-400">No se pudo conectar con el Core API en http://localhost:3000</p></div></div>');
+          setHtmlContent('<div class="min-h-screen bg-[#141414] text-white flex items-center justify-center p-8"><div class="text-center"><h1 class="text-4xl font-bold mb-4 text-red-500">Error de conexión</h1><p class="text-gray-400">No se pudo conectar con el Core API</p></div></div>');
         }
       }
     };
@@ -140,6 +143,8 @@ export default function EngineRenderer() {
 
   return (
     <>
+      {/* Inyectar CSS compilado (optimizado) o usar CDN fallback */}
+      <style dangerouslySetInnerHTML={{ __html: cssContent }} />
       <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
     </>
   );
