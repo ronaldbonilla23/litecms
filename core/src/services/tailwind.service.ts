@@ -1,8 +1,12 @@
-import postcss from 'postcss';
-import tailwindcss from 'tailwindcss';
-import autoprefixer from 'autoprefixer';
+// tailwind.service.ts
+// Nota: Usamos require para evitar problemas de tipos con Tailwind CSS v3
 
 export const compileTailwindCSS = async (htmlContent: string, themeSettings: any): Promise<string> => {
+  // Dynamic require para evitar problemas de compilación TypeScript
+  const postcss = require('postcss');
+  const tailwindcss = require('tailwindcss');
+  const autoprefixer = require('autoprefixer');
+
   const config = {
     content: [{ raw: htmlContent, extension: 'html' }],
     theme: {
