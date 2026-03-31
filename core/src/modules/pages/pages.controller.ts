@@ -9,20 +9,23 @@ export const createPage = async (req: AuthRequest, res: Response, next: NextFunc
         const validation = PageSchema.safeParse(req.body);
 
         if (!validation.success) {
-            res.status(400).json({ 
-                error: 'Datos inválidos', 
-                details: validation.error.flatten().fieldErrors 
+            res.status(400).json({
+                error: 'Datos inválidos',
+                details: validation.error.flatten().fieldErrors
             });
             return;
         }
 
-        const { title, slug, fields, status } = validation.data;
+        const { title, slug, fields, status, header_id, footer_id, content } = validation.data;
 
         // Insertamos en SQLite. Knex se encarga de convertir el objeto 'fields' a JSON
         const [id] = await db('pages').insert({
             title,
             slug,
             fields: JSON.stringify(fields || {}),
+            content: content || null,
+            header_id: header_id || null,
+            footer_id: footer_id || null,
             status: status || 'draft',
             author_id: (req.user as any)?.id // Tomamos el ID del administrador del token
         });
@@ -76,19 +79,19 @@ export const getAllPages = async (req: AuthRequest, res: Response, next: NextFun
 export const updatePage = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { id } = req.params;
-        
+
         // El esquema de actualización es parcial ya que no requerimos todos los campos
         const validation = PageSchema.partial().safeParse(req.body);
 
         if (!validation.success) {
-            res.status(400).json({ 
-                error: 'Datos de actualización inválidos', 
-                details: validation.error.flatten().fieldErrors 
+            res.status(400).json({
+                error: 'Datos de actualización inválidos',
+                details: validation.error.flatten().fieldErrors
             });
             return;
         }
 
-        const { title, fields, status } = validation.data;
+        const { title, fields, status, header_id, footer_id, content } = validation.data;
 
         const updateData: any = {
             updated_at: db.fn.now()
@@ -97,6 +100,9 @@ export const updatePage = async (req: AuthRequest, res: Response, next: NextFunc
         if (title !== undefined) updateData.title = title;
         if (status !== undefined) updateData.status = status;
         if (fields !== undefined) updateData.fields = JSON.stringify(fields);
+        if (content !== undefined) updateData.content = content;
+        if (header_id !== undefined) updateData.header_id = header_id;
+        if (footer_id !== undefined) updateData.footer_id = footer_id;
 
         const updatedCount = await db('pages').where({ id }).update(updateData);
 

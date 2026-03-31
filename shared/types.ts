@@ -36,6 +36,12 @@ export interface Page {
     status: 'draft' | 'published';
     /** ID of the user who created/owns this page */
     author_id?: number | null;
+    /** ID of the header template to use */
+    header_id?: string | null;
+    /** ID of the footer template to use */
+    footer_id?: string | null;
+    /** HTML content for the page */
+    content?: string | null;
     /** Date when the page was created */
     created_at: string;
     /** Date of the last update to the page */
@@ -83,10 +89,13 @@ export const LoginSchema = UserSchema.pick({ email: true, password: true });
 
 export const PageSchema = z.object({
     title: z.string().min(1, 'El título es obligatorio'),
-    slug: z.string().min(1, 'El slug es obligatorio').regex(/^[a-z0-9-]+$/, 'Slug inválido'),
+    slug: z.string().min(1, 'El slug es obligatorio'),
     fields: z.any().optional(),
     status: z.enum(['draft', 'published']).default('draft'),
     author_id: z.number().int().optional().nullable(),
+    header_id: z.string().optional().nullable(),
+    footer_id: z.string().optional().nullable(),
+    content: z.string().optional().nullable(),
 });
 
 export const MediaSchema = z.object({
