@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import db from '../../database';
 import { AuthRequest } from '../auth/auth.middleware';
+import { compileTailwindCSS } from '../../services/tailwind.service';
 
 export const createTemplate = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -11,11 +12,16 @@ export const createTemplate = async (req: AuthRequest, res: Response, next: Next
             return;
         }
 
+        // Obtener theme settings y compilar CSS
+        const themeSettings = await db('theme_settings').first();
+        const compiledCss = await compileTailwindCSS(content, themeSettings || {});
+
         const [id] = await db('templates').insert({
             id: crypto.randomUUID(),
             name,
             type,
             content: typeof content === 'string' ? content : JSON.stringify(content),
+            compiled_css: compiledCss || null,
             is_active: is_active ?? true
         });
 
@@ -79,8 +85,15 @@ export const updateTemplate = async (req: AuthRequest, res: Response, next: Next
 
         if (name !== undefined) updateData.name = name;
         if (type !== undefined) updateData.type = type;
-        if (content !== undefined) updateData.content = typeof content === 'string' ? content : JSON.stringify(content);
         if (is_active !== undefined) updateData.is_active = is_active;
+
+        // Compilar CSS si el contenido cambió
+        if (content !== undefined) {
+            updateData.content = typeof content === 'string' ? content : JSON.stringify(content);
+            const themeSettings = await db('theme_settings').first();
+            const compiledCss = await compileTailwindCSS(content, themeSettings || {});
+            updateData.compiled_css = compiledCss;
+        }
 
         const updatedCount = await db('templates').where({ id }).update(updateData);
 

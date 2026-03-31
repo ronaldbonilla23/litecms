@@ -60,10 +60,12 @@ export default function EngineRenderer() {
           }
         }
 
-        setHtmlContent(finalHtml || '<div style="color:white; padding: 2rem;">Contenido vacío</div>');
+        // 3. Inyectar CSS compilado desde el backend
+        if (page.compiled_css) {
+          setCssContent(page.compiled_css);
+        }
 
-        // 3. Inyectar CSS compilado (por ahora vacío, luego vendrá de la BD)
-        // setCssContent(page.compiled_css || '');
+        setHtmlContent(finalHtml || '<div style="color:white; padding: 2rem;">Contenido vacío</div>');
 
       } catch (error: any) {
         console.error('Error en el Motor:', error);

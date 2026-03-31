@@ -3,6 +3,7 @@ import db from '../../database';
 import { AuthRequest } from '../auth/auth.middleware';
 import { PageSchema } from '../../../../shared/types';
 import { ZodError } from 'zod';
+import { compileTailwindCSS } from '../../services/tailwind.service';
 
 export const createPage = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -19,18 +20,25 @@ export const createPage = async (req: AuthRequest, res: Response, next: NextFunc
 
         const { title, slug, fields, status, header_id, footer_id, content } = validation.data;
 
+        // Obtener theme settings para compilar CSS
+        const themeSettings = await db('theme_settings').first();
+        const htmlToCompile = content || '';
+        const compiledCss = await compileTailwindCSS(htmlToCompile, themeSettings || {});
+
         // Insertamos en SQLite. Knex se encarga de convertir el objeto 'fields' a JSON
         const [id] = await db('pages').insert({
             title,
             slug,
             fields: JSON.stringify(fields || {}),
             content: content || null,
+            compiled_css: compiledCss || null,
             header_id: header_id || null,
             footer_id: footer_id || null,
             status: status || 'draft',
             author_id: (req.user as any)?.id // Tomamos el ID del administrador del token
         });
 
+        console.log('[Pages Controller] Página creada con ID:', id);
         res.status(201).json({ message: 'Página creada', id });
     } catch (error: any) {
         console.error('[Pages Controller] Error:', error.message);
@@ -102,9 +110,16 @@ export const updatePage = async (req: AuthRequest, res: Response, next: NextFunc
         if (title !== undefined) updateData.title = title;
         if (status !== undefined) updateData.status = status;
         if (fields !== undefined) updateData.fields = JSON.stringify(fields);
-        if (content !== undefined) updateData.content = content;
         if (header_id !== undefined) updateData.header_id = header_id;
         if (footer_id !== undefined) updateData.footer_id = footer_id;
+
+        // Compilar CSS si el contenido cambió
+        if (content !== undefined) {
+            updateData.content = content;
+            const themeSettings = await db('theme_settings').first();
+            const compiledCss = await compileTailwindCSS(content || '', themeSettings || {});
+            updateData.compiled_css = compiledCss;
+        }
 
         const updatedCount = await db('pages').where({ id }).update(updateData);
 
