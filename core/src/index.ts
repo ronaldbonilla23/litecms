@@ -16,7 +16,12 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middlewares globales
-app.use(cors());
+// CORS: Permitir tanto el admin (5173) como el frontend público (5174)
+app.use(cors({
+    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
+    methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
+    credentials: true
+}));
 app.use(express.json()); // Permite a la API recibir payloads en formato JSON
 
 // Ruta de diagnóstico (Health Check)
@@ -42,12 +47,6 @@ app.get('/api/error-test', (req: Request, res: Response, next: NextFunction) => 
     next(err); // Pasamos el error al manejador global
 });
 
-// Permite que tu Admin (5173) le hable a tu Core (3000)
-app.use(cors({
-    origin: 'http://localhost:5173',
-    methods: ['GET', 'PUT', 'POST', 'DELETE'],
-    credentials: true
-}));
 // MANEJADOR GLOBAL DE ERRORES (Cumpliendo el Technical Brief)
 app.use((err: Error | any, req: Request, res: Response, next: NextFunction) => {
     console.error('[LiteCMS Error]:', err.message);

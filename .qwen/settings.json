@@ -7,7 +7,9 @@
       "Bash(npx *)",
       "Bash(mkdir *)",
       "Bash(npm *)",
-      "Bash(curl *)"
+      "Bash(curl *)",
+      "Bash(pkill *)",
+      "Bash(true)"
     ]
   },
   "$version": 3
