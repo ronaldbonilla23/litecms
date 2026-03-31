@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
-import axios from 'axios';
+import api from '../api/axios';
 
-const CORE_URL = 'http://localhost:3000/api';
+const CORE_URL = '/api';
 
 export default function PageEditor() {
     const [templates, setTemplates] = useState<any[]>([]);
@@ -19,7 +19,7 @@ export default function PageEditor() {
         // Cargar plantillas disponibles para los selects de Header y Footer
         const fetchTemplates = async () => {
             try {
-                const { data } = await axios.get(`${CORE_URL}/templates`);
+                const { data } = await api.get(`${CORE_URL}/templates`);
                 setTemplates(data);
             } catch (error) {
                 console.error('Error al cargar plantillas:', error);
@@ -36,11 +36,11 @@ export default function PageEditor() {
         setIsSaving(true);
         try {
             // Aquí enviaremos los datos al backend (Endpoint por crear/actualizar)
-            await axios.post(`${CORE_URL}/pages`, pageData);
+            await api.post(`${CORE_URL}/pages`, pageData);
             alert('Página guardada con éxito 🚀');
         } catch (error) {
             console.error('Error al guardar la página:', error);
-            alert('Error al guardar. Asegúrate de que el backend soporta slug, header_id y footer_id.');
+            alert('Error al guardar.');
         } finally {
             setIsSaving(false);
         }
