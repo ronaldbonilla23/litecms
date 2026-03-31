@@ -48,7 +48,7 @@ export default function EngineRenderer() {
         document.head.appendChild(scriptCDN);
 
         // 3. Obtener la página por slug
-        const { data: page } = await axios.get(`${CORE_URL}/pages/${currentSlug}`);
+        const { data: page } = await axios.get(`${CORE_URL}/pages/slug/${currentSlug}`);
 
         if (!page) {
           setHtmlContent('<div class="text-white p-8 text-center">Página no encontrada (404)</div>');

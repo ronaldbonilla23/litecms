@@ -4,13 +4,13 @@ import { verifyToken } from '../auth/auth.middleware';
 
 const router = Router();
 
-// Solo los usuarios con token válido pueden crear páginas
+// Rutas públicas (por slug) - DEBEN IR PRIMERO
+router.get('/slug/:slug', getPageBySlug);
+
+// Rutas protegidas
 router.get('/', verifyToken, getAllPages);
 router.get('/:id', verifyToken, getPageById);
 router.post('/', verifyToken, createPage);
 router.put('/:id', verifyToken, updatePage);
-
-// Ruta pública (por slug)
-router.get('/:slug', getPageBySlug);
 
 export default router;
