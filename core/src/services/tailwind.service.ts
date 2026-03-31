@@ -19,6 +19,9 @@ export const compileTailwindCSS = async (htmlContent: string, themeSettings: any
             secondary: themeSettings?.secondary_color || '#3B82F6',
             accent: themeSettings?.accent_color || '#F59E0B',
             fondo: themeSettings?.background_color || '#141414',
+            // Colores adicionales para templates
+            navbar: '#1a1a1a',
+            'navbar-line': '#333',
           },
           fontFamily: {
             sans: [themeSettings?.body_font || 'Inter', 'sans-serif'],
