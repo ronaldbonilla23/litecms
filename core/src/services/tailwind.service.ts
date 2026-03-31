@@ -1,5 +1,6 @@
 // tailwind.service.ts
 // Nota: Usamos require para evitar problemas de tipos con Tailwind CSS v3
+const path = require('path');
 
 export const compileTailwindCSS = async (htmlContent: string, themeSettings: any): Promise<string> => {
   // Dynamic require para evitar problemas de compilación TypeScript
@@ -23,7 +24,9 @@ export const compileTailwindCSS = async (htmlContent: string, themeSettings: any
         },
       },
     },
-    corePlugins: { preflight: true }, // Incluye el reset básico de Tailwind
+    corePlugins: {
+      preflight: false, // Desactivamos reset para evitar conflictos
+    },
   };
 
   // CSS base con las directivas de Tailwind
@@ -41,7 +44,8 @@ export const compileTailwindCSS = async (htmlContent: string, themeSettings: any
 
     return result.css;
   } catch (error: any) {
-    console.error('Error compilando Tailwind:', error.message);
+    console.error('[Tailwind Service] Error compilando:', error.message);
+    console.error('[Tailwind Service] Stack:', error.stack);
     return '';
   }
 };
