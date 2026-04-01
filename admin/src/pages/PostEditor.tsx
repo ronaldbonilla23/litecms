@@ -232,11 +232,11 @@ export default function PostEditor() {
                     className="sr-only"
                   />
                   <div className={`w-5 h-5 rounded-full border-2 transition-all duration-200 flex items-center justify-center ${postData.category_ids.includes(cat.id)
-                      ? 'bg-primary border-primary'
-                      : 'bg-[#141414] border-gray-600 group-hover:border-primary'
+                    ? 'bg-primary border-primary'
+                    : 'bg-[#141414] border-gray-600 group-hover:border-primary'
                     }`}>
                     {postData.category_ids.includes(cat.id) && (
-                      <i className="fi fi-rr-check text-black text-xs font-bold"></i>
+                      <i className="fi fi-rr-check text-black text-xs font-bold" style={{ paddingTop: '4px' }}></i>
                     )}
                   </div>
                 </div>
@@ -276,11 +276,11 @@ export default function PostEditor() {
                     className="sr-only"
                   />
                   <div className={`w-5 h-5 rounded-full border-2 transition-all duration-200 flex items-center justify-center ${postData.tag_ids.includes(tag.id)
-                      ? 'bg-primary border-primary'
-                      : 'bg-[#141414] border-gray-600 group-hover:border-primary'
+                    ? 'bg-primary border-primary'
+                    : 'bg-[#141414] border-gray-600 group-hover:border-primary'
                     }`}>
                     {postData.tag_ids.includes(tag.id) && (
-                      <i className="fi fi-rr-check text-black text-xs font-bold"></i>
+                      <i className="fi fi-rr-check text-black text-xs font-bold" style={{ paddingTop: '4px' }}></i>
                     )}
                   </div>
                 </div>
