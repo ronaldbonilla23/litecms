@@ -12,6 +12,7 @@ import statsRoutes from './modules/stats/stats.routes';
 import themeSettingsRoutes from './modules/themeSettings/themeSettings.routes';
 import templatesRoutes from './modules/templates/templates.routes';
 
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -29,6 +30,7 @@ app.get('/api/health', (req: Request, res: Response) => {
     res.json({ message: 'LiteCMS API funcionando correctamente' });
 });
 
+
 app.use('/api/install', installRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/pages', pageRoutes);
@@ -41,8 +43,8 @@ app.use('/api/templates', templatesRoutes);
 app.use('/uploads', express.static(path.join(__dirname, '../../content/uploads')));
 
 // Servir archivos CSS compilados y toda la carpeta public
-app.use('/css', express.static(path.join(__dirname, '../../public/css')));
-app.use(express.static(path.join(__dirname, '../../public')));
+app.use('/css', express.static(path.join(__dirname, '../public', 'css')));
+app.use(express.static(path.join(__dirname, '../public')));
 
 
 // Ruta de prueba para forzar un error y validar nuestra arquitectura

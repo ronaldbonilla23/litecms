@@ -37,7 +37,7 @@ export default function EngineRenderer() {
           const link = document.createElement('link');
           link.rel = 'stylesheet';
           // Buscamos el archivo físico generado por el backend y evitamos la caché con Date.now()
-          link.href = `${SERVER_URL}/css/master-${pageData.id}.css?t=${Date.now()}`;
+          link.href = `${SERVER_URL}/css/page-master-${pageData.id}.css?t=${Date.now()}`;
           link.setAttribute('data-master-css', 'true');
           document.head.appendChild(link);
         }
