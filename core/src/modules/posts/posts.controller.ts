@@ -78,24 +78,29 @@ export const getAllPosts = async (req: Request, res: Response, next: NextFunctio
     const total = parseInt((totalResult[0] as any).count, 10);
 
     // Aplicar paginación y obtener resultados
-    const posts = await query
-      .leftJoin('post_category', 'posts.id', 'post_category.post_id')
-      .leftJoin('categories', 'post_category.category_id', 'categories.id')
-      .leftJoin('post_tag', 'posts.id', 'post_tag.post_id')
-      .leftJoin('tags', 'post_tag.tag_id', 'tags.id')
-      .leftJoin('media', 'posts.featured_image_id', 'media.id')
-      .select(
-        'posts.*',
-        'users.name as author_name',
-        'users.email as author_email',
-        db.raw('GROUP_CONCAT(DISTINCT categories.name) as categories'),
-        db.raw('GROUP_CONCAT(DISTINCT tags.name) as tags'),
-        'media.filename as featured_image',
-        'media.url as featured_image_url'
-      )
-      .groupBy('posts.id')
+    const postsList = await query
       .limit(limitNum)
       .offset(offset);
+
+    // Obtener categorías y tags para cada post
+    const posts = await Promise.all(postsList.map(async (post) => {
+      const [categories, tags] = await Promise.all([
+        db('categories')
+          .leftJoin('post_category', 'categories.id', 'post_category.category_id')
+          .where('post_category.post_id', post.id)
+          .select('categories.name'),
+        db('tags')
+          .leftJoin('post_tag', 'tags.id', 'post_tag.tag_id')
+          .where('post_tag.post_id', post.id)
+          .select('tags.name')
+      ]);
+
+      return {
+        ...post,
+        categories: categories.map(c => c.name).join(', '),
+        tags: tags.map(t => t.name).join(', ')
+      };
+    }));
 
     res.json({
       posts,
@@ -107,6 +112,7 @@ export const getAllPosts = async (req: Request, res: Response, next: NextFunctio
       }
     });
   } catch (error) {
+    console.error('Error en getAllPosts:', error);
     next(error);
   }
 };
