@@ -14,7 +14,7 @@ import type { z } from 'zod';
 // ----------------------------------------------------------------------------
 // Tipos
 // ----------------------------------------------------------------------------
-export type CreatePostDTO = z.infer<typeof PageSchema> & {
+export type CreatePostDTO = Omit<z.infer<typeof PageSchema>, 'fields'> & {
   category_ids?: number[];
   tag_ids?: number[];
 };
@@ -315,7 +315,6 @@ export const create = async (data: CreatePostDTO, authorId: number): Promise<{ i
       title,
       slug: providedSlug,
       content,
-      featured_image_id,
       status = 'draft',
       published_at,
       scheduled_for,
@@ -336,7 +335,6 @@ export const create = async (data: CreatePostDTO, authorId: number): Promise<{ i
       title,
       slug: finalSlug,
       content,
-      featured_image_id: featured_image_id || null,
       author_id: authorId,
       status,
       published_at: published_at || null,
@@ -382,9 +380,7 @@ export const update = async (id: number, data: UpdatePostDTO): Promise<void> => 
     const {
       title,
       slug: providedSlug,
-      excerpt,
       content,
-      featured_image_id,
       status,
       published_at,
       scheduled_for,
@@ -405,9 +401,7 @@ export const update = async (id: number, data: UpdatePostDTO): Promise<void> => 
       // Verificar unicidad del slug (excluyendo este post)
       updateData.slug = await generateUniqueSlug(providedSlug, id);
     }
-    if (excerpt !== undefined) updateData.excerpt = excerpt;
     if (content !== undefined) updateData.content = content;
-    if (featured_image_id !== undefined) updateData.featured_image_id = featured_image_id;
     if (status !== undefined) updateData.status = status;
     if (published_at !== undefined) updateData.published_at = published_at;
     if (scheduled_for !== undefined) updateData.scheduled_for = scheduled_for;

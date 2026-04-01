@@ -53,6 +53,11 @@ export const getPostBySlug = async (req: Request, res: Response, next: NextFunct
   try {
     const slug = Array.isArray(req.params.slug) ? req.params.slug[0] : req.params.slug;
 
+    if (!slug) {
+      res.status(400).json({ error: 'Slug es requerido' });
+      return;
+    }
+
     const post = await postsService.getBySlug(slug);
 
     if (!post) {
@@ -71,7 +76,14 @@ export const getPostBySlug = async (req: Request, res: Response, next: NextFunct
 // ----------------------------------------------------------------------------
 export const getPostById = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const id = Array.isArray(req.params.id) ? parseInt(req.params.id[0], 10) : parseInt(req.params.id, 10);
+    const idParam = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+    if (!idParam) {
+      res.status(400).json({ error: 'ID es requerido' });
+      return;
+    }
+
+    const id = parseInt(idParam, 10);
 
     const post = await postsService.getById(id);
 
@@ -92,7 +104,14 @@ export const getPostById = async (req: AuthRequest, res: Response, next: NextFun
 // ----------------------------------------------------------------------------
 export const getRelatedPosts = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const id = Array.isArray(req.params.id) ? parseInt(req.params.id[0], 10) : parseInt(req.params.id, 10);
+    const idParam = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+    if (!idParam) {
+      res.status(400).json({ error: 'ID es requerido' });
+      return;
+    }
+
+    const id = parseInt(idParam, 10);
     const limit = parseInt(req.query.limit as string, 10) || 3;
 
     const related = await postsService.getRelated(id, limit);
@@ -112,7 +131,6 @@ export const createPost = async (req: AuthRequest, res: Response, next: NextFunc
       title,
       slug,
       content,
-      featured_image_id,
       status,
       published_at,
       scheduled_for,
@@ -133,7 +151,6 @@ export const createPost = async (req: AuthRequest, res: Response, next: NextFunc
       title,
       slug,
       content,
-      featured_image_id,
       status,
       published_at,
       scheduled_for,
@@ -158,7 +175,14 @@ export const createPost = async (req: AuthRequest, res: Response, next: NextFunc
 // ----------------------------------------------------------------------------
 export const updatePost = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const id = Array.isArray(req.params.id) ? parseInt(req.params.id[0], 10) : parseInt(req.params.id, 10);
+    const idParam = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+    if (!idParam) {
+      res.status(400).json({ error: 'ID es requerido' });
+      return;
+    }
+
+    const id = parseInt(idParam, 10);
 
     await postsService.update(id, req.body);
 
@@ -173,7 +197,14 @@ export const updatePost = async (req: AuthRequest, res: Response, next: NextFunc
 // ----------------------------------------------------------------------------
 export const deletePost = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const id = Array.isArray(req.params.id) ? parseInt(req.params.id[0], 10) : parseInt(req.params.id, 10);
+    const idParam = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+    if (!idParam) {
+      res.status(400).json({ error: 'ID es requerido' });
+      return;
+    }
+
+    const id = parseInt(idParam, 10);
 
     await postsService.deletePost(id);
 
