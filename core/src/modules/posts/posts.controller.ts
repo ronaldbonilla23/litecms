@@ -47,7 +47,7 @@ export const getAllPosts = async (req: Request, res: Response, next: NextFunctio
 
     // Filtro por categoría (usando subquery)
     if (category) {
-      query = query.whereIn('posts.id', function() {
+      query = query.whereIn('posts.id', function () {
         this.select('post_id')
           .from('post_category')
           .where('category_id', category as string);
@@ -56,7 +56,7 @@ export const getAllPosts = async (req: Request, res: Response, next: NextFunctio
 
     // Filtro por tag (usando subquery)
     if (tag) {
-      query = query.whereIn('posts.id', function() {
+      query = query.whereIn('posts.id', function () {
         this.select('post_id')
           .from('post_tag')
           .where('tag_id', tag as string);
@@ -288,8 +288,8 @@ export const createPost = async (req: AuthRequest, res: Response, next: NextFunc
       await db('post_tag').insert(tagData);
     }
 
-    res.status(201).json({ 
-      message: 'Post creado exitosamente', 
+    res.status(201).json({
+      message: 'Post creado exitosamente',
       id,
       slug: finalSlug
     });
@@ -422,7 +422,7 @@ export const getRelatedPosts = async (req: Request, res: Response, next: NextFun
       .leftJoin('post_tag', 'posts.id', 'post_tag.post_id')
       .leftJoin('media', 'posts.featured_image_id', 'media.id')
       .whereIn('post_tag.tag_id', tagIds)
-      .where('posts.id', '!=', id)
+      .whereNot('posts.id', id)
       .where('posts.status', 'published')
       .select(
         'posts.id',
