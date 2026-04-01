@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 
@@ -176,29 +174,19 @@ export default function PostEditor() {
           className="w-full bg-[#1a1a1a] border border-white/10 text-white px-6 py-4 rounded-xl focus:border-primary outline-none resize-none"
         />
 
-        {/* Editor WYSIWYG */}
-        <div className="bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden">
-          <ReactQuill
-            theme="snow"
+        {/* Contenido HTML */}
+        <div>
+          <label className="text-[10px] text-gray-400 uppercase mb-2 block">Contenido (HTML)</label>
+          <textarea
             value={postData.content}
-            onChange={(content) => setPostData({ ...postData, content })}
-            placeholder="Escribe el contenido de tu post..."
-            modules={{
-              toolbar: [
-                [{ header: [1, 2, 3, false] }],
-                ['bold', 'italic', 'underline', 'strike'],
-                [{ list: 'ordered' }, { list: 'bullet' }],
-                [{ color: [] }, { background: [] }],
-                ['link', 'image'],
-                ['clean']
-              ]
-            }}
-            formats={[
-              'header', 'bold', 'italic', 'underline', 'strike',
-              'list', 'bullet', 'color', 'background', 'link', 'image'
-            ]}
-            className="bg-[#141414] text-white"
+            onChange={(e) => setPostData({ ...postData, content: e.target.value })}
+            placeholder="Escribe el contenido en HTML..."
+            rows={15}
+            className="w-full bg-[#1a1a1a] border border-white/10 text-white px-6 py-4 rounded-xl focus:border-primary outline-none resize-none font-mono text-sm"
           />
+          <p className="text-[10px] text-gray-500 mt-2">
+            💡 Tip: Usa HTML directamente. Ej: &lt;p&gt;Párrafo&lt;/p&gt;, &lt;h2&gt;Título&lt;/h2&gt;
+          </p>
         </div>
       </div>
 
