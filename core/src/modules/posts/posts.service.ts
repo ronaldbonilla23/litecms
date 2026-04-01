@@ -23,9 +23,9 @@ export type UpdatePostDTO = Partial<CreatePostDTO>;
 
 export interface PostFilters {
   status?: string;
-  category_id?: number;
-  tag_id?: number;
-  author_id?: number;
+  category_id?: number | undefined;
+  tag_id?: number | undefined;
+  author_id?: number | undefined;
   page?: number;
   limit?: number;
   sort?: string;
@@ -36,7 +36,6 @@ export interface PostWithRelations {
   id: number;
   title: string;
   slug: string;
-  excerpt: string | null;
   content: string;
   featured_image_id: number | null;
   author_id: number;
@@ -79,7 +78,7 @@ const generateUniqueSlug = async (title: string, postId?: number): Promise<strin
   // Verificar unicidad
   while (true) {
     const query = db('posts').where({ slug });
-    
+
     // Si estamos actualizando, excluir el post actual
     if (postId) {
       query.whereNot('id', postId);
@@ -109,7 +108,7 @@ const getPostRelations = async (postId: number): Promise<{
       .leftJoin('post_category', 'categories.id', 'post_category.category_id')
       .where('post_category.post_id', postId)
       .select('categories.id', 'categories.name', 'categories.slug'),
-    
+
     db('tags')
       .leftJoin('post_tag', 'tags.id', 'post_tag.tag_id')
       .where('post_tag.post_id', postId)
@@ -124,11 +123,11 @@ const getPostRelations = async (postId: number): Promise<{
  */
 const getFeaturedImage = async (featuredImageId: number | null): Promise<string | null> => {
   if (!featuredImageId) return null;
-  
+
   const media = await db('media')
     .where({ id: featuredImageId })
     .first('filename');
-  
+
   return media?.filename || null;
 };
 
@@ -169,7 +168,7 @@ export const getAll = async (filters: PostFilters = {}): Promise<{
 
   // Filtros adicionales
   if (category_id) {
-    query = query.whereIn('posts.id', function() {
+    query = query.whereIn('posts.id', function () {
       this.select('post_id')
         .from('post_category')
         .where('category_id', category_id);
@@ -177,7 +176,7 @@ export const getAll = async (filters: PostFilters = {}): Promise<{
   }
 
   if (tag_id) {
-    query = query.whereIn('posts.id', function() {
+    query = query.whereIn('posts.id', function () {
       this.select('post_id')
         .from('post_tag')
         .where('tag_id', tag_id);
@@ -315,7 +314,6 @@ export const create = async (data: CreatePostDTO, authorId: number): Promise<{ i
     const {
       title,
       slug: providedSlug,
-      excerpt,
       content,
       featured_image_id,
       status = 'draft',
@@ -329,7 +327,7 @@ export const create = async (data: CreatePostDTO, authorId: number): Promise<{ i
     } = data;
 
     // Generar slug único
-    const finalSlug = providedSlug 
+    const finalSlug = providedSlug
       ? await generateUniqueSlug(providedSlug)
       : await generateUniqueSlug(title);
 
@@ -337,7 +335,6 @@ export const create = async (data: CreatePostDTO, authorId: number): Promise<{ i
     const [id] = await trx('posts').insert({
       title,
       slug: finalSlug,
-      excerpt: excerpt || null,
       content,
       featured_image_id: featured_image_id || null,
       author_id: authorId,
@@ -424,7 +421,7 @@ export const update = async (id: number, data: UpdatePostDTO): Promise<void> => 
     // Sincronizar categorías (borrar antiguas, insertar nuevas)
     if (category_ids !== undefined) {
       await trx('post_category').where({ post_id: id }).delete();
-      
+
       if (category_ids.length > 0) {
         const categoryData = category_ids.map((catId, index) => ({
           post_id: id,
@@ -438,7 +435,7 @@ export const update = async (id: number, data: UpdatePostDTO): Promise<void> => 
     // Sincronizar tags (borrar antiguos, insertar nuevos)
     if (tag_ids !== undefined) {
       await trx('post_tag').where({ post_id: id }).delete();
-      
+
       if (tag_ids.length > 0) {
         const tagData = tag_ids.map((tagId) => ({
           post_id: id,
@@ -500,7 +497,7 @@ export const getRelated = async (postId: number, limit: number = 3): Promise<Pos
   const posts: PostWithRelations[] = await Promise.all(
     relatedList.map(async (post: any) => {
       const { categories, tags } = await getPostRelations(post.id);
-      
+
       return {
         ...post,
         categories,

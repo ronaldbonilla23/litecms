@@ -26,7 +26,7 @@ export const getAllPosts = async (req: Request, res: Response, next: NextFunctio
       order
     } = req.query;
 
-    const filters = {
+    const filters: postsService.PostFilters = {
       status: status as string,
       category_id: category ? parseInt(category as string, 10) : undefined,
       tag_id: tag ? parseInt(tag as string, 10) : undefined,
@@ -51,7 +51,7 @@ export const getAllPosts = async (req: Request, res: Response, next: NextFunctio
 // ----------------------------------------------------------------------------
 export const getPostBySlug = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { slug } = req.params;
+    const slug = Array.isArray(req.params.slug) ? req.params.slug[0] : req.params.slug;
 
     const post = await postsService.getBySlug(slug);
 
@@ -71,9 +71,9 @@ export const getPostBySlug = async (req: Request, res: Response, next: NextFunct
 // ----------------------------------------------------------------------------
 export const getPostById = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = Array.isArray(req.params.id) ? parseInt(req.params.id[0], 10) : parseInt(req.params.id, 10);
 
-    const post = await postsService.getById(parseInt(id, 10));
+    const post = await postsService.getById(id);
 
     if (!post) {
       res.status(404).json({ error: 'Post no encontrado' });
@@ -92,10 +92,10 @@ export const getPostById = async (req: AuthRequest, res: Response, next: NextFun
 // ----------------------------------------------------------------------------
 export const getRelatedPosts = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = Array.isArray(req.params.id) ? parseInt(req.params.id[0], 10) : parseInt(req.params.id, 10);
     const limit = parseInt(req.query.limit as string, 10) || 3;
 
-    const related = await postsService.getRelated(parseInt(id, 10), limit);
+    const related = await postsService.getRelated(id, limit);
 
     res.json({ related });
   } catch (error) {
@@ -111,7 +111,6 @@ export const createPost = async (req: AuthRequest, res: Response, next: NextFunc
     const {
       title,
       slug,
-      excerpt,
       content,
       featured_image_id,
       status,
@@ -133,7 +132,6 @@ export const createPost = async (req: AuthRequest, res: Response, next: NextFunc
     const result = await postsService.create({
       title,
       slug,
-      excerpt,
       content,
       featured_image_id,
       status,
@@ -160,9 +158,9 @@ export const createPost = async (req: AuthRequest, res: Response, next: NextFunc
 // ----------------------------------------------------------------------------
 export const updatePost = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = Array.isArray(req.params.id) ? parseInt(req.params.id[0], 10) : parseInt(req.params.id, 10);
 
-    await postsService.update(parseInt(id, 10), req.body);
+    await postsService.update(id, req.body);
 
     res.json({ message: 'Post actualizado exitosamente' });
   } catch (error) {
@@ -175,9 +173,9 @@ export const updatePost = async (req: AuthRequest, res: Response, next: NextFunc
 // ----------------------------------------------------------------------------
 export const deletePost = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = Array.isArray(req.params.id) ? parseInt(req.params.id[0], 10) : parseInt(req.params.id, 10);
 
-    await postsService.deletePost(parseInt(id, 10));
+    await postsService.deletePost(id);
 
     res.json({ message: 'Post eliminado exitosamente' });
   } catch (error) {
