@@ -93,7 +93,7 @@ export const compileTailwindCSS = async (htmlContent: string, themeSettings: any
           },
         },
       },
-      corePlugins: { preflight: false },
+      corePlugins: { preflight: true }, // Activado: ahora solo hay UN CSS por vista
     };
 
     const cssInput = '@tailwind base;\n@tailwind components;\n@tailwind utilities;';

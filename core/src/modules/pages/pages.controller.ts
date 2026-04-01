@@ -63,8 +63,7 @@ export const createPage = async (req: AuthRequest, res: Response, next: NextFunc
 // Función para obtener una página específica por su SLUG
 export const getPageBySlug = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const { slug } = req.params; // Sacamos el nombre (ej: "inicio") de la URL
-
+        const { slug } = req.params;
         const page = await db('pages').where({ slug }).first();
 
         if (!page) {
@@ -72,13 +71,36 @@ export const getPageBySlug = async (req: Request, res: Response, next: NextFunct
             return;
         }
 
-        // TRUCO SENIOR: SQLite guarda el JSON como texto. 
-        // Aquí lo convertimos de nuevo a un objeto de JavaScript para que React lo entienda.
-        if (page.fields && typeof page.fields === 'string') {
-            page.fields = JSON.parse(page.fields);
+        // 1. Obtener los Templates (Header y Footer)
+        let headerHtml = '';
+        let footerHtml = '';
+
+        if (page.header_id) {
+            const header = await db('templates').where({ id: page.header_id }).first();
+            if (header) headerHtml = header.content;
+        }
+        if (page.footer_id) {
+            const footer = await db('templates').where({ id: page.footer_id }).first();
+            if (footer) footerHtml = footer.content;
         }
 
-        res.json(page);
+        // 2. Unificar todo el HTML
+        const fullHtml = `
+            ${headerHtml}
+            ${page.content || ''}
+            ${footerHtml}
+        `;
+
+        // 3. Obtener Theme Settings y compilar un ÚNICO CSS maestro
+        const themeSettings = await db('theme_settings').first();
+        const compiledCss = await compileTailwindCSS(fullHtml, themeSettings || {}, `master-${page.id}`);
+
+        // 4. Devolver la página con el HTML ensamblado y el CSS unificado
+        res.json({
+            ...page,
+            full_html: fullHtml,
+            master_css: compiledCss
+        });
     } catch (error) {
         next(error);
     }

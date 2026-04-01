@@ -6,12 +6,12 @@ const CORE_URL = 'http://localhost:3000/api';
 
 export default function EngineRenderer() {
   const [htmlContent, setHtmlContent] = useState<string>('');
+  const [cssContent, setCssContent] = useState<string>('');
   const [currentSlug, setCurrentSlug] = useState<string>('/');
 
   useEffect(() => {
     const path = window.location.pathname;
-    const slug = path === '/' ? '/' : path.replace(/^\/|\/$/g, '') || '/';
-    setCurrentSlug(slug);
+    setCurrentSlug(path === '/' ? '/' : path.replace(/^\/|\/$/g, '') || '/');
   }, []);
 
   useEffect(() => {
@@ -20,79 +20,28 @@ export default function EngineRenderer() {
     const loadPage = async () => {
       try {
         const encodedSlug = encodeURIComponent(currentSlug);
-        const { data: page } = await axios.get(`${CORE_URL}/pages/slug/${encodedSlug}`);
+        // Ahora esta llamada devuelve el HTML ensamblado y el CSS unificado
+        const { data: pageData } = await axios.get(`${CORE_URL}/pages/slug/${encodedSlug}`);
 
-        if (!page) {
-          setHtmlContent('<div class="p-8 text-center">Página no encontrada</div>');
+        if (!pageData) {
+          setHtmlContent('<div class="p-8 text-center text-white">Página no encontrada</div>');
           return;
         }
 
-        // 1. Inyectar CSS de la página en el HEAD
-        const cssLinks = [];
+        // 1. Establecer el CSS maestro
+        setCssContent(pageData.master_css || '');
 
-        if (page.id) {
-          cssLinks.push(`http://localhost:3000/css/page-${page.id}.css`);
-        }
-
-        // 2. Agregar CSS del header template si existe
-        if (page.header_id) {
-          cssLinks.push(`http://localhost:3000/css/template-${page.header_id}.css`);
-        }
-
-        // 3. Agregar CSS del footer template si existe
-        if (page.footer_id) {
-          cssLinks.push(`http://localhost:3000/css/template-${page.footer_id}.css`);
-        }
-
-        // Remover CSS anteriores si existen
-        document.querySelectorAll('[data-dynamic-css]').forEach(el => el.remove());
-
-        // Crear links en el head
-        cssLinks.forEach((url, index) => {
-          const link = document.createElement('link');
-          link.rel = 'stylesheet';
-          link.href = url;
-          link.setAttribute('data-dynamic-css', 'true');
-          document.head.appendChild(link);
-        });
-
-        // 4. Compilar HTML con Handlebars
-        let finalHtml = '';
-
-        // Contexto para las plantillas
+        // 2. Compilar el HTML unificado con Handlebars
         const templateContext = {
-          page,
-          site: {
-            name: 'LiteCMS',
-            url: window.location.origin
-          }
+          page: pageData,
+          site: { name: 'LiteCMS', url: window.location.origin }
         };
 
-        // Header
-        if (page.header_id) {
-          const { data: header } = await axios.get(`${CORE_URL}/templates/${page.header_id}`);
-          if (header?.content) {
-            finalHtml += Handlebars.compile(header.content)(templateContext);
-          }
-        }
-
-        // Contenido principal
-        if (page.content) {
-          finalHtml += Handlebars.compile(page.content)(templateContext);
-        }
-
-        // Footer
-        if (page.footer_id) {
-          const { data: footer } = await axios.get(`${CORE_URL}/templates/${page.footer_id}`);
-          if (footer?.content) {
-            finalHtml += Handlebars.compile(footer.content)(templateContext);
-          }
-        }
-
-        setHtmlContent(finalHtml || '<div class="p-8 text-center">Sin contenido</div>');
+        const compiledHtml = Handlebars.compile(pageData.full_html)(templateContext);
+        setHtmlContent(compiledHtml);
 
       } catch (error: any) {
-        console.error('Error:', error);
+        console.error('Error cargando la vista:', error);
         setHtmlContent(`<div class="p-8 text-center text-red-500">Error: ${error.message}</div>`);
       }
     };
@@ -100,17 +49,12 @@ export default function EngineRenderer() {
     loadPage();
   }, [currentSlug]);
 
-  // Cleanup al desmontar
-  useEffect(() => {
-    return () => {
-      const existingLink = document.getElementById('page-css');
-      if (existingLink) {
-        existingLink.remove();
-      }
-    };
-  }, []);
-
   return (
-    <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
+    <>
+      {/* Se inyecta el único CSS necesario para toda la vista */}
+      <style dangerouslySetInnerHTML={{ __html: cssContent }} />
+      {/* Se inyecta el HTML ya ensamblado y procesado */}
+      <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
+    </>
   );
 }
