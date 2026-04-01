@@ -40,8 +40,9 @@ app.use('/api/templates', templatesRoutes);
 // Servir archivos estáticos de forma pública
 app.use('/uploads', express.static(path.join(__dirname, '../../content/uploads')));
 
-// Servir archivos CSS compilados (usando process.cwd() para path correcto)
-app.use('/css', express.static(path.join(process.cwd(), 'public', 'css')));
+// Servir archivos CSS compilados y toda la carpeta public
+app.use('/css', express.static(path.join(__dirname, '../../public/css')));
+app.use(express.static(path.join(__dirname, '../../public')));
 
 
 // Ruta de prueba para forzar un error y validar nuestra arquitectura
