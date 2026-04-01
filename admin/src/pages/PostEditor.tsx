@@ -205,31 +205,43 @@ export default function PostEditor() {
 
         {/* Categorías */}
         <div className="bg-[#1a1a1a]/50 border border-white/5 rounded-xl p-6">
-          <h3 className="text-primary text-xs font-bold uppercase tracking-widest mb-4">
+          <h3 className="text-primary text-xs font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
+            <i className="fi fi-rr-folder"></i>
             Categorías
           </h3>
-          <div className="space-y-2 max-h-48 overflow-y-auto">
+          <div className="space-y-3 max-h-48 overflow-y-auto">
             {categories.map((cat) => (
-              <label key={cat.id} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={postData.category_ids.includes(cat.id)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setPostData({
-                        ...postData,
-                        category_ids: [...postData.category_ids, cat.id]
-                      });
-                    } else {
-                      setPostData({
-                        ...postData,
-                        category_ids: postData.category_ids.filter(id => id !== cat.id)
-                      });
-                    }
-                  }}
-                  className="rounded bg-[#141414] border-white/10 text-primary focus:ring-primary"
-                />
-                <span className="text-sm text-gray-300">{cat.name}</span>
+              <label key={cat.id} className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={postData.category_ids.includes(cat.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setPostData({
+                          ...postData,
+                          category_ids: [...postData.category_ids, cat.id]
+                        });
+                      } else {
+                        setPostData({
+                          ...postData,
+                          category_ids: postData.category_ids.filter(id => id !== cat.id)
+                        });
+                      }
+                    }}
+                    className="sr-only"
+                  />
+                  <div className={`w-5 h-5 rounded-full border-2 transition-all duration-200 flex items-center justify-center ${postData.category_ids.includes(cat.id)
+                      ? 'bg-primary border-primary'
+                      : 'bg-[#141414] border-gray-600 group-hover:border-primary'
+                    }`}>
+                    {postData.category_ids.includes(cat.id) && (
+                      <i className="fi fi-rr-check text-black text-xs font-bold"></i>
+                    )}
+                  </div>
+                </div>
+                <span className={`text-sm transition-colors ${postData.category_ids.includes(cat.id) ? 'text-primary font-medium' : 'text-gray-300'
+                  }`}>{cat.name}</span>
               </label>
             ))}
           </div>
@@ -237,31 +249,43 @@ export default function PostEditor() {
 
         {/* Tags */}
         <div className="bg-[#1a1a1a]/50 border border-white/5 rounded-xl p-6">
-          <h3 className="text-primary text-xs font-bold uppercase tracking-widest mb-4">
+          <h3 className="text-primary text-xs font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
+            <i className="fi fi-rr-tag"></i>
             Tags
           </h3>
-          <div className="space-y-2 max-h-48 overflow-y-auto">
+          <div className="space-y-3 max-h-48 overflow-y-auto">
             {tags.map((tag) => (
-              <label key={tag.id} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={postData.tag_ids.includes(tag.id)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setPostData({
-                        ...postData,
-                        tag_ids: [...postData.tag_ids, tag.id]
-                      });
-                    } else {
-                      setPostData({
-                        ...postData,
-                        tag_ids: postData.tag_ids.filter(id => id !== tag.id)
-                      });
-                    }
-                  }}
-                  className="rounded bg-[#141414] border-white/10 text-primary focus:ring-primary"
-                />
-                <span className="text-sm text-gray-300">{tag.name}</span>
+              <label key={tag.id} className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={postData.tag_ids.includes(tag.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setPostData({
+                          ...postData,
+                          tag_ids: [...postData.tag_ids, tag.id]
+                        });
+                      } else {
+                        setPostData({
+                          ...postData,
+                          tag_ids: postData.tag_ids.filter(id => id !== tag.id)
+                        });
+                      }
+                    }}
+                    className="sr-only"
+                  />
+                  <div className={`w-5 h-5 rounded-full border-2 transition-all duration-200 flex items-center justify-center ${postData.tag_ids.includes(tag.id)
+                      ? 'bg-primary border-primary'
+                      : 'bg-[#141414] border-gray-600 group-hover:border-primary'
+                    }`}>
+                    {postData.tag_ids.includes(tag.id) && (
+                      <i className="fi fi-rr-check text-black text-xs font-bold"></i>
+                    )}
+                  </div>
+                </div>
+                <span className={`text-sm transition-colors ${postData.tag_ids.includes(tag.id) ? 'text-primary font-medium' : 'text-gray-300'
+                  }`}>{tag.name}</span>
               </label>
             ))}
           </div>
