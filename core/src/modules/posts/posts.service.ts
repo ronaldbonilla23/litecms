@@ -14,7 +14,14 @@ import type { z } from 'zod';
 // ----------------------------------------------------------------------------
 // Tipos
 // ----------------------------------------------------------------------------
-export type CreatePostDTO = Omit<z.infer<typeof PageSchema>, 'fields'> & {
+export type CreatePostDTO = Omit<z.infer<typeof PageSchema>, 'fields' | 'author_id' | 'header_id' | 'footer_id'> & {
+  published_at?: string | null;
+  scheduled_for?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  canonical_url?: string | null;
+  view_count?: number;
+  comments_enabled?: boolean;
   category_ids?: number[];
   tag_ids?: number[];
 };
