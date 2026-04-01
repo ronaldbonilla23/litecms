@@ -50,6 +50,36 @@ export function Sidebar() {
           >
             <i className="fi fi-rr-file-code text-xl mt-1"></i>
           </NavLink>
+
+          {/* Blog Section */}
+          <div className="w-10 h-px bg-white/10 my-2"></div>
+
+          <NavLink
+            to="/dashboard/posts"
+            className={({ isActive }) =>
+              `w-10 h-10 flex items-center justify-center rounded-full transition-all ${isActive ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-white hover:text-primary hover:bg-white/5'}`
+            }
+          >
+            <i className="fi fi-rr-newspaper text-xl mt-1"></i>
+          </NavLink>
+
+          <NavLink
+            to="/dashboard/categories"
+            className={({ isActive }) =>
+              `w-10 h-10 flex items-center justify-center rounded-full transition-all ${isActive ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-white hover:text-primary hover:bg-white/5'}`
+            }
+          >
+            <i className="fi fi-rr-folder text-xl mt-1"></i>
+          </NavLink>
+
+          <NavLink
+            to="/dashboard/tags"
+            className={({ isActive }) =>
+              `w-10 h-10 flex items-center justify-center rounded-full transition-all ${isActive ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-white hover:text-primary hover:bg-white/5'}`
+            }
+          >
+            <i className="fi fi-rr-tag text-xl mt-1"></i>
+          </NavLink>
         </nav>
         <div className="mt-4">
           <button className="w-10 h-10 flex items-center justify-center rounded-full text-white/60 hover:text-red-400 transition-all">

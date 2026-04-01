@@ -9,6 +9,10 @@ import PageEditor from './pages/PageEditor';
 import { AdminLayout } from './components/layout/AdminLayout';
 import ThemeSettings from './pages/ThemeSettings';
 import TemplateEditor from './pages/TemplateEditor';
+import { Posts } from './pages/Posts';
+import PostEditor from './pages/PostEditor';
+import { Categories } from './pages/Categories';
+import { Tags } from './pages/Tags';
 
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const token = localStorage.getItem('token');
@@ -112,6 +116,48 @@ function App() {
           element={
             <ProtectedRoute>
               <PageEditor />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Blog Routes */}
+        <Route
+          path="/dashboard/posts"
+          element={
+            <ProtectedRoute>
+              <Posts />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/posts/new"
+          element={
+            <ProtectedRoute>
+              <PostEditor />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/posts/edit/:id"
+          element={
+            <ProtectedRoute>
+              <PostEditor />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/categories"
+          element={
+            <ProtectedRoute>
+              <Categories />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/tags"
+          element={
+            <ProtectedRoute>
+              <Tags />
             </ProtectedRoute>
           }
         />
