@@ -1,12 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import dynamic from 'react/dynamic';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
-
-// React Quill dinámico (solo cliente)
-const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
-import 'react-quill/dist/quill.snow.css';
 
 interface Category {
   id: number;
