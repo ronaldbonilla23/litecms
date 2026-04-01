@@ -370,7 +370,7 @@ export const create = async (data: CreatePostDTO, authorId: number): Promise<{ i
       await trx('post_tag').insert(tagData);
     }
 
-    return { id, slug: finalSlug };
+    return { id: id as number, slug: finalSlug };
   });
 };
 
