@@ -11,6 +11,9 @@ import mediaRoutes from './modules/media/media.routes';
 import statsRoutes from './modules/stats/stats.routes';
 import themeSettingsRoutes from './modules/themeSettings/themeSettings.routes';
 import templatesRoutes from './modules/templates/templates.routes';
+import postsRoutes from './modules/posts/posts.routes';
+import categoriesRoutes from './modules/categories/categories.routes';
+import tagsRoutes from './modules/tags/tags.routes';
 
 
 const app = express();
@@ -38,6 +41,9 @@ app.use('/api/media', mediaRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/theme-settings', themeSettingsRoutes);
 app.use('/api/templates', templatesRoutes);
+app.use('/api/posts', postsRoutes);
+app.use('/api/categories', categoriesRoutes);
+app.use('/api/tags', tagsRoutes);
 
 // Servir archivos estáticos de forma pública
 app.use('/uploads', express.static(path.join(__dirname, '../../content/uploads')));
