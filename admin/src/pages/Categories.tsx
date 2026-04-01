@@ -43,7 +43,7 @@ export function Categories() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name) {
       toast.error('El nombre es obligatorio');
       return;
@@ -163,11 +163,6 @@ export function Categories() {
         <div className="flex items-center justify-center py-20">
           <i className="fi fi-rr-spinner animate-spin text-4xl text-primary"></i>
         </div>
-      ) : categories.length === 0 ? (
-        <div className="text-center py-20 border border-white/5 rounded-2xl bg-[#1a1a1a]/30">
-          <i className="fi fi-rr-folder text-6xl text-white/10 mb-4"></i>
-          <p className="text-gray-400">No hay categorías creadas</p>
-        </div>
       ) : (
         <div>{renderCategoryTree(categories)}</div>
       )}
@@ -176,7 +171,7 @@ export function Categories() {
       {showModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-8">
           <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setShowModal(false)}></div>
-          
+
           <form onSubmit={handleSubmit} className="relative w-full max-w-lg bg-[#141414] border border-white/10 rounded-2xl p-8">
             <h3 className="text-2xl font-bold text-white mb-6">
               {editingCategory ? 'Editar Categoría' : 'Nueva Categoría'}

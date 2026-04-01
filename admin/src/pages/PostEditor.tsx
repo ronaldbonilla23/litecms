@@ -111,10 +111,10 @@ export default function PostEditor() {
 
       if (isEditing) {
         await api.put(`/posts/${id}`, payload);
-        toast.success('Post actualizado 🚀');
+        toast.success('Post actualizado');
       } else {
         const { data } = await api.post('/posts', payload);
-        toast.success('Post creado 🚀');
+        toast.success('Post creado');
         navigate(`/dashboard/posts/edit/${data.id}`);
       }
     } catch (error: any) {
@@ -197,9 +197,9 @@ export default function PostEditor() {
             onChange={(e) => setPostData({ ...postData, status: e.target.value as any })}
             className="w-full bg-[#141414] border border-white/10 text-white px-3 py-2 rounded-lg text-sm focus:border-primary outline-none"
           >
-            <option value="draft">📝 Borrador</option>
-            <option value="published">✅ Publicado</option>
-            <option value="scheduled">⏰ Programado</option>
+            <option value="draft"><i className="fi fi-rr-edit"></i> Borrador</option>
+            <option value="published"><i className="fi fi-rr-check-circle"></i> Publicado</option>
+            <option value="scheduled"><i className="fi fi-rr-clock"></i> Programado</option>
           </select>
         </div>
 
@@ -310,9 +310,9 @@ export default function PostEditor() {
               Guardando...
             </span>
           ) : isEditing ? (
-            'Actualizar Post 🚀'
+            'Actualizar Post'
           ) : (
-            'Publicar Post 🚀'
+            'Publicar Post'
           )}
         </button>
       </div>

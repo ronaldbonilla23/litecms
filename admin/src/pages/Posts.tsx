@@ -62,6 +62,16 @@ export function Posts() {
     return badges[status] || badges.draft;
   };
 
+  const getStatusIcon = (status: string) => {
+    const icons: Record<string, string> = {
+      published: 'fi-rr-check-circle',
+      draft: 'fi-rr-edit',
+      scheduled: 'fi-rr-clock',
+      archived: 'fi-rr-folder'
+    };
+    return icons[status] || icons.draft;
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       {/* Header */}
@@ -119,7 +129,8 @@ export function Posts() {
                 {/* Contenido */}
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded border ${getStatusBadge(post.status)}`}>
+                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded border flex items-center gap-1 ${getStatusBadge(post.status)}`}>
+                      <i className={`fi ${getStatusIcon(post.status)}`}></i>
                       {post.status}
                     </span>
                     {post.categories && (
