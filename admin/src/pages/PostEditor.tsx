@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import RichTextEditor from '../components/RichTextEditor';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 
@@ -174,19 +175,13 @@ export default function PostEditor() {
           className="w-full bg-[#1a1a1a] border border-white/10 text-white px-6 py-4 rounded-xl focus:border-primary outline-none resize-none"
         />
 
-        {/* Contenido HTML */}
+        {/* Editor WYSIWYG */}
         <div>
-          <label className="text-[10px] text-gray-400 uppercase mb-2 block">Contenido (HTML)</label>
-          <textarea
-            value={postData.content}
-            onChange={(e) => setPostData({ ...postData, content: e.target.value })}
-            placeholder="Escribe el contenido en HTML..."
-            rows={15}
-            className="w-full bg-[#1a1a1a] border border-white/10 text-white px-6 py-4 rounded-xl focus:border-primary outline-none resize-none font-mono text-sm"
+          <label className="text-[10px] text-gray-400 uppercase mb-2 block">Contenido</label>
+          <RichTextEditor
+            content={postData.content}
+            onChange={(content) => setPostData({ ...postData, content })}
           />
-          <p className="text-[10px] text-gray-500 mt-2">
-            💡 Tip: Usa HTML directamente. Ej: &lt;p&gt;Párrafo&lt;/p&gt;, &lt;h2&gt;Título&lt;/h2&gt;
-          </p>
         </div>
       </div>
 
