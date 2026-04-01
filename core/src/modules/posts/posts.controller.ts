@@ -183,8 +183,7 @@ export const getPostById = async (req: AuthRequest, res: Response, next: NextFun
         'posts.*',
         'users.name as author_name',
         'users.email as author_email',
-        'media.filename as featured_image',
-        'media.url as featured_image_url'
+        'media.filename as featured_image'
       )
       .where('posts.id', id)
       .first();
@@ -212,6 +211,7 @@ export const getPostById = async (req: AuthRequest, res: Response, next: NextFun
       tags
     });
   } catch (error) {
+    console.error('Error en getPostById:', error);
     next(error);
   }
 };

@@ -183,7 +183,6 @@ export default function PostEditor() {
             value={postData.content}
             onChange={(content) => setPostData({ ...postData, content })}
             placeholder="Escribe el contenido de tu post..."
-            className="bg-[#141414]"
             modules={{
               toolbar: [
                 [{ header: [1, 2, 3, false] }],
@@ -198,6 +197,7 @@ export default function PostEditor() {
               'header', 'bold', 'italic', 'underline', 'strike',
               'list', 'bullet', 'color', 'background', 'link', 'image'
             ]}
+            className="bg-[#141414] text-white"
           />
         </div>
       </div>
