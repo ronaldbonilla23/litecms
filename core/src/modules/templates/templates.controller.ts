@@ -14,16 +14,23 @@ export const createTemplate = async (req: AuthRequest, res: Response, next: Next
 
         // Obtener theme settings y compilar CSS
         const themeSettings = await db('theme_settings').first();
-        const compiledCss = await compileTailwindCSS(content, themeSettings || {});
 
+        // Insertar PRIMERO para obtener el ID
         const [id] = await db('templates').insert({
             id: crypto.randomUUID(),
             name,
             type,
             content: typeof content === 'string' ? content : JSON.stringify(content),
-            compiled_css: compiledCss || null,
             is_active: is_active ?? true
         });
+
+        // Compilar CSS y guardar en archivo DESPUÉS de tener el ID
+        const compiledCss = await compileTailwindCSS(content, themeSettings || {}, `template-${id}`);
+
+        // Actualizar la plantilla con el CSS compilado
+        if (compiledCss && compiledCss.length > 0) {
+            await db('templates').where({ id }).update({ compiled_css: compiledCss });
+        }
 
         res.status(201).json({ message: 'Plantilla creada', id });
     } catch (error: any) {
@@ -91,7 +98,7 @@ export const updateTemplate = async (req: AuthRequest, res: Response, next: Next
         if (content !== undefined) {
             updateData.content = typeof content === 'string' ? content : JSON.stringify(content);
             const themeSettings = await db('theme_settings').first();
-            const compiledCss = await compileTailwindCSS(content, themeSettings || {});
+            const compiledCss = await compileTailwindCSS(content, themeSettings || {}, `template-${id}`);
             updateData.compiled_css = compiledCss;
         }
 

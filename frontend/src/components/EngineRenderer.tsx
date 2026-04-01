@@ -27,25 +27,36 @@ export default function EngineRenderer() {
           return;
         }
 
-        // 1. Inyectar CSS en el HEAD
-        const cssUrl = page.id ? `http://localhost:3000/css/page-${page.id}.css` : '';
+        // 1. Inyectar CSS de la página en el HEAD
+        const cssLinks = [];
 
-        // Remover CSS anterior si existe
-        const existingLink = document.getElementById('page-css');
-        if (existingLink) {
-          existingLink.remove();
+        if (page.id) {
+          cssLinks.push(`http://localhost:3000/css/page-${page.id}.css`);
         }
 
-        // Crear nuevo link en el head
-        if (cssUrl) {
+        // 2. Agregar CSS del header template si existe
+        if (page.header_id) {
+          cssLinks.push(`http://localhost:3000/css/template-${page.header_id}.css`);
+        }
+
+        // 3. Agregar CSS del footer template si existe
+        if (page.footer_id) {
+          cssLinks.push(`http://localhost:3000/css/template-${page.footer_id}.css`);
+        }
+
+        // Remover CSS anteriores si existen
+        document.querySelectorAll('[data-dynamic-css]').forEach(el => el.remove());
+
+        // Crear links en el head
+        cssLinks.forEach((url, index) => {
           const link = document.createElement('link');
           link.rel = 'stylesheet';
-          link.href = cssUrl;
-          link.id = 'page-css';
+          link.href = url;
+          link.setAttribute('data-dynamic-css', 'true');
           document.head.appendChild(link);
-        }
+        });
 
-        // 2. Compilar HTML con Handlebars
+        // 4. Compilar HTML con Handlebars
         let finalHtml = '';
 
         // Contexto para las plantillas
