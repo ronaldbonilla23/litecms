@@ -8,12 +8,13 @@ const SERVER_URL = 'http://localhost:3000';
 
 export default function EngineRenderer() {
   const [htmlContent, setHtmlContent] = useState<string>('');
-  const [currentSlug, setCurrentSlug] = useState<string>('/');
-
-  useEffect(() => {
-    const path = window.location.pathname;
-    setCurrentSlug(path === '/' ? '/' : path.replace(/^\/|\/$/g, '') || '/');
-  }, []);
+  const [currentSlug] = useState<string>(() => {
+    let path = window.location.pathname;
+    if (path !== '/' && path.endsWith('/')) {
+      path = path.slice(0, -1);
+    }
+    return path;
+  });
 
   useEffect(() => {
     if (!currentSlug) return;
@@ -21,8 +22,8 @@ export default function EngineRenderer() {
     const loadPage = async () => {
       try {
         const encodedSlug = encodeURIComponent(currentSlug);
-        // El backend devuelve el HTML ensamblado
-        const { data: pageData } = await axios.get(`${CORE_URL}/pages/slug/${encodedSlug}`);
+        // El backend devuelve el HTML ensamblado usando un query parametro seguro
+        const { data: pageData } = await axios.get(`${CORE_URL}/pages/by-slug?url=${encodedSlug}`);
 
         if (!pageData) {
           setHtmlContent('<div class="p-8 text-center text-white">Página no encontrada</div>');

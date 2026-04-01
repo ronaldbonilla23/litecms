@@ -6,7 +6,7 @@ function App() {
     <Router>
       <Routes>
         {/* Ruta principal del sitio web que ven los usuarios */}
-        <Route path="/" element={<EngineRenderer />} />
+        <Route path="*" element={<EngineRenderer />} />
       </Routes>
     </Router>
   );

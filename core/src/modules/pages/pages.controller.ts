@@ -63,7 +63,17 @@ export const createPage = async (req: AuthRequest, res: Response, next: NextFunc
 // Función para obtener una página específica por su SLUG
 export const getPageBySlug = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const { slug } = req.params;
+        let { url } = req.query;
+        if (!url || typeof url !== 'string') {
+            res.status(400).json({ error: 'Falta el parámetro de URL' });
+            return;
+        }
+
+        let slug = url.trim();
+        if (slug !== '/' && !slug.startsWith('/')) {
+            slug = '/' + slug;
+        }
+
         const page = await db('pages').where({ slug }).first();
 
         if (!page) {
@@ -133,13 +143,14 @@ export const updatePage = async (req: AuthRequest, res: Response, next: NextFunc
             return;
         }
 
-        const { title, fields, status, header_id, footer_id, content } = validation.data;
+        const { title, slug, fields, status, header_id, footer_id, content } = validation.data;
 
         const updateData: any = {
             updated_at: db.fn.now()
         };
 
         if (title !== undefined) updateData.title = title;
+        if (slug !== undefined) updateData.slug = slug;
         if (status !== undefined) updateData.status = status;
         if (fields !== undefined) updateData.fields = JSON.stringify(fields);
         if (header_id !== undefined) updateData.header_id = header_id;

@@ -13,12 +13,13 @@ export default function PageEditor() {
     const [templates, setTemplates] = useState<any[]>([]);
     const [pageData, setPageData] = useState({
         title: 'Nueva Página',
-        slug: '/',
+        slug: '',
         header_id: '',
         footer_id: '',
         status: 'draft',
         content: '<main class="max-w-6xl mx-auto p-8">\n  <h2 class="text-4xl text-primary font-bold">Contenido de la página</h2>\n  <p class="text-white mt-4">Usa clases de Tailwind aquí.</p>\n</main>'
     });
+    const [isIndex, setIsIndex] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(!!id);
 
@@ -28,14 +29,16 @@ export default function PageEditor() {
             const fetchPage = async () => {
                 try {
                     const { data } = await api.get(`/pages/${id}`);
+                    const loadedSlug = data.slug || '';
                     setPageData({
                         title: data.title || 'Nueva Página',
-                        slug: data.slug || '/',
+                        slug: loadedSlug === '/' ? '/' : loadedSlug,
                         header_id: data.header_id || '',
                         footer_id: data.footer_id || '',
                         status: data.status || 'draft',
                         content: data.content || pageData.content
                     });
+                    setIsIndex(loadedSlug === '/');
                 } catch (error) {
                     console.error('Error al cargar página:', error);
                     toast.error('Error al cargar la página');
@@ -67,17 +70,22 @@ export default function PageEditor() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            // Normalizar slug: '/' para home, o asegurar que empiece con '/'
+            // Normalizar slug
             let normalizedSlug = pageData.slug.trim();
-            if (!normalizedSlug || normalizedSlug === '/') {
+            if (isIndex) {
                 normalizedSlug = '/';
+            } else if (!normalizedSlug) {
+                // Si está vacío, derivarlo del título
+                normalizedSlug = '/' + pageData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
             } else if (!normalizedSlug.startsWith('/')) {
                 normalizedSlug = '/' + normalizedSlug;
             }
 
             const pageDataToSave = {
                 ...pageData,
-                slug: normalizedSlug
+                slug: normalizedSlug,
+                header_id: pageData.header_id || null,
+                footer_id: pageData.footer_id || null
             };
 
             if (id) {
@@ -116,15 +124,50 @@ export default function PageEditor() {
                 </div>
 
                 <div className="flex flex-col">
-                    <label className="text-[10px] text-gray-500 uppercase mb-2">Ruta (Slug)</label>
+                    <div className="flex items-center justify-between mb-2">
+                        <label className="text-[10px] text-gray-500 uppercase">Ruta (Slug)</label>
+                        <label className="flex items-center gap-2 cursor-pointer group">
+                            <div className="relative">
+                                <input
+                                    type="checkbox"
+                                    checked={isIndex}
+                                    onChange={(e) => {
+                                        const checked = e.target.checked;
+                                        setIsIndex(checked);
+                                        if (checked) {
+                                            setPageData({ ...pageData, slug: '/' });
+                                        } else {
+                                            setPageData({ ...pageData, slug: '' });
+                                        }
+                                    }}
+                                    className="sr-only"
+                                />
+                                <div className={`w-5 h-5 rounded-full border-2 transition-all duration-200 flex items-center justify-center ${isIndex
+                                        ? 'bg-primary border-primary'
+                                        : 'bg-[#141414] border-gray-600 group-hover:border-primary'
+                                    }`}>
+                                    {isIndex && (
+                                        <i className="fi fi-rr-check text-black text-xs font-bold" style={{ paddingTop: '4px' }}></i>
+                                    )}
+                                </div>
+                            </div>
+                            <span className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${isIndex ? 'text-primary' : 'text-gray-400 group-hover:text-primary'
+                                }`}>Página de Inicio</span>
+                        </label>
+                    </div>
                     <input
                         type="text"
                         value={pageData.slug}
-                        onChange={(e) => setPageData({ ...pageData, slug: e.target.value })}
-                        placeholder="ej: / o /nosotros"
-                        className="bg-[#141414] border border-gray-800 text-[#C2F86C] px-3 py-2 rounded text-sm focus:border-[#C2F86C] outline-none"
+                        disabled={isIndex}
+                        onChange={(e) => {
+                            // Formatear a URL slug: espacios a guiones primero, luego limpiar inválidos
+                            let formattedVal = e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\/-]/g, '');
+                            setPageData({ ...pageData, slug: formattedVal });
+                        }}
+                        placeholder={isIndex ? '/' : `ej: /${pageData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'nuestra-empresa'}`}
+                        className={`bg-[#141414] border border-gray-800 text-[#C2F86C] px-3 py-2 rounded text-sm focus:border-[#C2F86C] outline-none ${isIndex ? 'opacity-50 cursor-not-allowed' : ''}`}
                     />
-                    <span className="text-[10px] text-gray-600 mt-1">Usa "/" para definir esta página como el Home (Index).</span>
+                    <span className="text-[10px] text-gray-600 mt-1">Si la dejas vacía, se generará usando tu Título Interno.</span>
                 </div>
 
                 <div className="flex flex-col">

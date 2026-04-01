@@ -4,8 +4,8 @@ import { verifyToken } from '../auth/auth.middleware';
 
 const router = Router();
 
-// Rutas públicas (por slug) - DEBEN IR PRIMERO
-router.get('/slug/:slug', getPageBySlug);
+// Rutas públicas (por slug) - Usar Query Params
+router.get('/by-slug', getPageBySlug);
 
 // Rutas protegidas
 router.get('/', verifyToken, getAllPages);

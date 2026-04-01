@@ -78,7 +78,7 @@ export function Sidebar() {
               `w-10 h-10 flex items-center justify-center rounded-full transition-all ${isActive ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-white hover:text-primary hover:bg-white/5'}`
             }
           >
-            <i className="fi fi-rr-tag text-xl mt-1"></i>
+            <i className="fi fi-rr-tags text-xl mt-1"></i>
           </NavLink>
         </nav>
         <div className="mt-4">
