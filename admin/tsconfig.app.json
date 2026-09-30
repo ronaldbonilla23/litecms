@@ -22,7 +22,12 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+
+    /* shared/ no tiene node_modules propio: sus imports se resuelven con los del admin */
+    "paths": {
+      "*": ["./node_modules/@types/*", "./node_modules/*"]
+    }
   },
   "include": ["src", "../shared"]
 }

@@ -1,9 +1,42 @@
 import type { Request, Response, NextFunction } from 'express';
 import db from '../../database';
 import { AuthRequest } from '../auth/auth.middleware';
-import { PageSchema } from '../../../../shared/types';
+import { PageSchema, PageUpdateSchema } from '../../../../shared/types';
 import { ZodError } from 'zod';
 import { compileTailwindCSS } from '../../services/tailwind.service';
+import { config } from '../../config';
+
+export const recompilePageMasterCss = async (pageId: number): Promise<string> => {
+    const page = await db('pages').where({ id: pageId }).first();
+    if (!page) return '';
+
+    let headerHtml = '';
+    let footerHtml = '';
+
+    if (page.header_id) {
+        const header = await db('templates').where({ id: page.header_id }).first();
+        if (header) headerHtml = header.content;
+    }
+    if (page.footer_id) {
+        const footer = await db('templates').where({ id: page.footer_id }).first();
+        if (footer) footerHtml = footer.content;
+    }
+
+    const fullHtml = `
+        ${headerHtml}
+        ${page.content || ''}
+        ${footerHtml}
+    `;
+
+    const themeSettings = await db('theme_settings').first();
+    const compiledCss = await compileTailwindCSS(fullHtml, themeSettings || {}, `master-${page.id}`);
+
+    if (compiledCss && compiledCss.length > 0) {
+        await db('pages').where({ id: pageId }).update({ compiled_css: compiledCss });
+    }
+
+    return compiledCss;
+};
 
 export const createPage = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -18,14 +51,7 @@ export const createPage = async (req: AuthRequest, res: Response, next: NextFunc
             return;
         }
 
-        const { title, slug, fields, status, header_id, footer_id, content } = validation.data;
-
-        // Obtener theme settings para compilar CSS
-        const themeSettings = await db('theme_settings').first();
-        console.log('[Pages Controller] Theme settings:', themeSettings ? 'Encontrado' : 'No encontrado');
-
-        const htmlToCompile = content || '';
-        console.log('[Pages Controller] Compilando CSS para contenido:', htmlToCompile.substring(0, 50) + '...');
+        const { title, slug, fields, status, header_id, footer_id, content, meta_title, meta_description, canonical_url, og_image_id } = validation.data;
 
         // Insertamos PRIMERO para obtener el ID
         const [id] = await db('pages').insert({
@@ -36,18 +62,15 @@ export const createPage = async (req: AuthRequest, res: Response, next: NextFunc
             header_id: header_id || null,
             footer_id: footer_id || null,
             status: status || 'draft',
-            author_id: (req.user as any)?.id
+            author_id: (req.user as any)?.id,
+            meta_title: meta_title || null,
+            meta_description: meta_description || null,
+            canonical_url: canonical_url || null,
+            og_image_id: og_image_id || null
         });
 
-        // Compilar CSS y guardar en archivo DESPUÉS de tener el ID
-        const compiledCss = await compileTailwindCSS(htmlToCompile, themeSettings || {}, String(id));
-        console.log('[Pages Controller] CSS compilado length:', compiledCss ? compiledCss.length : 0);
-        console.log('[Pages Controller] Página creada con ID:', id);
-
-        // Actualizar la página con el CSS compilado
-        if (compiledCss && compiledCss.length > 0) {
-            await db('pages').where({ id }).update({ compiled_css: compiledCss });
-        }
+        // Compilar y guardar CSS Maestro combinado
+        await recompilePageMasterCss(Number(id));
 
         res.status(201).json({ message: 'Página creada', id });
     } catch (error: any) {
@@ -61,7 +84,7 @@ export const createPage = async (req: AuthRequest, res: Response, next: NextFunc
 };
 
 // Función para obtener una página específica por su SLUG
-export const getPageBySlug = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getPageBySlug = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
         let { url } = req.query;
         if (!url || typeof url !== 'string') {
@@ -76,9 +99,14 @@ export const getPageBySlug = async (req: Request, res: Response, next: NextFunct
 
         const page = await db('pages').where({ slug }).first();
 
-        if (!page) {
+        // Los borradores solo son visibles para usuarios autenticados (vista previa)
+        if (!page || (!req.user && page.status !== 'published')) {
             res.status(404).json({ error: 'La página solicitada no existe' });
             return;
+        }
+
+        if (page.fields && typeof page.fields === 'string') {
+            page.fields = JSON.parse(page.fields);
         }
 
         // 1. Obtener los Templates (Header y Footer)
@@ -101,15 +129,27 @@ export const getPageBySlug = async (req: Request, res: Response, next: NextFunct
             ${footerHtml}
         `;
 
-        // 3. Obtener Theme Settings y compilar un ÚNICO CSS maestro
-        const themeSettings = await db('theme_settings').first();
-        const compiledCss = await compileTailwindCSS(fullHtml, themeSettings || {}, `master-${page.id}`);
+        // 3. Obtener o compilar el CSS Maestro precompilado
+        let compiledCss = page.compiled_css;
+        if (!compiledCss) {
+            compiledCss = await recompilePageMasterCss(page.id);
+        }
 
-        // 4. Devolver la página con el HTML ensamblado y el CSS unificado
+        // 4. Obtener OG image URL si existe
+        let og_image_url = null;
+        if (page.og_image_id) {
+            const ogImage = await db('media').where({ id: page.og_image_id }).first('filename');
+            if (ogImage) {
+                og_image_url = `${config.siteUrl}/uploads/${ogImage.filename}`;
+            }
+        }
+
+        // 5. Devolver la página con el HTML ensamblado, el CSS unificado y datos SEO
         res.json({
             ...page,
             full_html: fullHtml,
-            master_css: compiledCss
+            master_css: compiledCss,
+            og_image_url
         });
     } catch (error) {
         next(error);
@@ -133,7 +173,7 @@ export const updatePage = async (req: AuthRequest, res: Response, next: NextFunc
         const { id } = req.params;
 
         // El esquema de actualización es parcial ya que no requerimos todos los campos
-        const validation = PageSchema.partial().safeParse(req.body);
+        const validation = PageUpdateSchema.safeParse(req.body);
 
         if (!validation.success) {
             res.status(400).json({
@@ -143,7 +183,7 @@ export const updatePage = async (req: AuthRequest, res: Response, next: NextFunc
             return;
         }
 
-        const { title, slug, fields, status, header_id, footer_id, content } = validation.data;
+        const { title, slug, fields, status, header_id, footer_id, content, meta_title, meta_description, canonical_url, og_image_id } = validation.data;
 
         const updateData: any = {
             updated_at: db.fn.now()
@@ -155,23 +195,23 @@ export const updatePage = async (req: AuthRequest, res: Response, next: NextFunc
         if (fields !== undefined) updateData.fields = JSON.stringify(fields);
         if (header_id !== undefined) updateData.header_id = header_id;
         if (footer_id !== undefined) updateData.footer_id = footer_id;
+        if (meta_title !== undefined) updateData.meta_title = meta_title;
+        if (meta_description !== undefined) updateData.meta_description = meta_description;
+        if (canonical_url !== undefined) updateData.canonical_url = canonical_url;
+        if (og_image_id !== undefined) updateData.og_image_id = og_image_id;
 
-        // Compilar CSS si el contenido cambió
-        if (content !== undefined) {
-            updateData.content = content;
-            console.log('[Pages Controller] Compilando CSS para contenido actualizado...');
-            const themeSettings = await db('theme_settings').first();
-            console.log('[Pages Controller] Theme settings:', themeSettings ? 'Encontrado' : 'No encontrado');
-            const compiledCss = await compileTailwindCSS(content || '', themeSettings || {}, String(id));
-            console.log('[Pages Controller] CSS compilado length:', compiledCss ? compiledCss.length : 0);
-            updateData.compiled_css = compiledCss;
-        }
+        if (content !== undefined) updateData.content = content;
 
         const updatedCount = await db('pages').where({ id }).update(updateData);
 
         if (updatedCount === 0) {
             res.status(404).json({ error: 'La página solicitada no existe o no se pudo actualizar' });
             return;
+        }
+
+        // Compilar y guardar CSS Maestro si cambió el contenido, header, footer
+        if (content !== undefined || header_id !== undefined || footer_id !== undefined) {
+            await recompilePageMasterCss(Number(id));
         }
 
         res.json({ message: 'Página actualizada con éxito' });

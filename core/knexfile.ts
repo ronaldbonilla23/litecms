@@ -1,11 +1,12 @@
 import type { Knex } from "knex";
 import path from "path";
 
+// Usado solo por la CLI de Knex (npx knex migrate:make ...).
+// En ejecución, core/src/database.ts aplica las migraciones automáticamente.
 const config: { [key: string]: Knex.Config } = {
     development: {
         client: "sqlite3",
         connection: {
-            // Apuntamos a la misma ruta que configuramos en database.ts
             filename: path.join(__dirname, "../content/litecms.sqlite"),
         },
         useNullAsDefault: true,

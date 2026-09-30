@@ -34,8 +34,8 @@ describe('Media Module Tests', () => {
     });
 
     it('Debe subir una imagen mockeada y retornar 201', async () => {
-        // Creamos un buffer falso simulando el contenido de una imagen
-        const fakeImageBuffer = Buffer.from('fake image content payload');
+        // Buffer con la firma JPEG real (FF D8 FF) seguida de relleno
+        const fakeImageBuffer = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.from('payload')]);
 
         const res = await request(app)
             .post('/api/media/upload')
@@ -48,6 +48,20 @@ describe('Media Module Tests', () => {
         expect(res.body.media).toHaveProperty('path');
 
         uploadedMediaId = res.body.media.id;
+    });
+
+    it('Debe rechazar un archivo con extensión .jpg que no es una imagen real', async () => {
+        const res = await request(app)
+            .post('/api/media/upload')
+            .set('Authorization', `Bearer ${mockToken}`)
+            .attach('file', Buffer.from('<?php echo "hola"; ?>'), 'shell.jpg');
+
+        expect(res.status).toBe(400);
+    });
+
+    it('Debe guardar el archivo con un nombre saneado', async () => {
+        const media = await db('media').where({ id: uploadedMediaId }).first();
+        expect(media.filename).toMatch(/^\d+-test-image\.jpg$/);
     });
 
     it('Debe listar la librería de medios retornando un arreglo', async () => {

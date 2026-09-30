@@ -1,28 +1,44 @@
 import type { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import db from '../../database'; // Importamos nuestra conexión a SQLite
+import { InstallSchema } from '../../../../shared/types';
+
+const isInstalled = async (): Promise<boolean> => {
+    const existingUsers = await db('users').count('* as count').first();
+    return Boolean(existingUsers && Number(existingUsers.count) > 0);
+};
+
+// GET /api/install/status - El admin lo consulta para decidir si mostrar el asistente de instalación
+export const getInstallStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        res.json({ installed: await isInstalled() });
+    } catch (error) {
+        next(error);
+    }
+};
 
 export const installCMS = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const { name, email, password } = req.body;
-
-        // 1. Validamos que el cliente envíe todos los datos
-        if (!name || !email || !password) {
-            res.status(400).json({ error: 'Faltan datos obligatorios (name, email, password)' });
+        // 1. Validamos los datos con Zod
+        const validation = InstallSchema.safeParse(req.body);
+        if (!validation.success) {
+            res.status(400).json({
+                error: 'Datos de instalación inválidos',
+                details: validation.error.flatten().fieldErrors
+            });
             return;
         }
 
-        // 2. Seguridad: Verificamos si ya hay un admin. 
-        // Si ya existe uno, bloqueamos la ruta para que nadie formatee el CMS de tu cliente.
-        const existingUsers = await db('users').count('* as count').first();
-        if (existingUsers && Number(existingUsers.count) > 0) {
+        // 2. Seguridad: si ya hay un admin, bloqueamos la ruta para que nadie formatee el CMS de tu cliente.
+        if (await isInstalled()) {
             res.status(403).json({ error: 'LiteCMS ya se encuentra instalado en este servidor' });
             return;
         }
 
-        // 3. Encriptamos la contraseña (Rasterizamos los vectores)
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
+        const { name, email, password } = validation.data;
+
+        // 3. Encriptamos la contraseña
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         // 4. Guardamos el primer administrador en SQLite
         await db('users').insert({

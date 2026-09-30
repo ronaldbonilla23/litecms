@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNode } from '@craftjs/core';
 
 /**
@@ -66,7 +66,7 @@ export const Image = ({ src, alt, ...props }: any) => {
   return (
     <div ref={(ref: any) => connect(drag(ref))} className="w-full overflow-hidden border border-black/10" {...props}>
       {src ? (
-        <img src={src.startsWith('http') ? src : `http://localhost:3000/uploads/${src}`} alt={alt} className="w-full h-auto object-cover" />
+        <img src={src.startsWith('http') ? src : `/uploads/${src}`} alt={alt} className="w-full h-auto object-cover" />
       ) : (
         <div className="bg-black/40 aspect-video flex flex-col items-center justify-center text-[#adaaaa] gap-2 border-2 border-dashed border-white/10">
           <i className="fi fi-rr-picture text-3xl"></i>

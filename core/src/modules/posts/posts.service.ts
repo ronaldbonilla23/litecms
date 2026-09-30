@@ -1,6 +1,11 @@
 import db from '../../database';
 import { PageSchema } from '../../../../shared/types';
 import type { z } from 'zod';
+import Handlebars from 'handlebars';
+import { compileTailwindCSS } from '../../services/tailwind.service';
+import { generateStructuredData, StructuredDataPost } from '../../services/structuredData.service';
+import type { Knex } from 'knex';
+import { config } from '../../config';
 
 /**
  * ============================================================================
@@ -43,6 +48,7 @@ export interface PostWithRelations {
   id: number;
   title: string;
   slug: string;
+  excerpt: string | null;
   content: string;
   featured_image_id: number | null;
   author_id: number;
@@ -61,6 +67,16 @@ export interface PostWithRelations {
   categories: Array<{ id: number; name: string; slug: string }>;
   tags: Array<{ id: number; name: string; slug: string; color: string }>;
   featured_image: string | null;
+}
+
+/**
+ * Rendered Post with Layout, CSS, metadata and structured data
+ */
+export interface RenderedPost {
+  html: string;
+  css: string;
+  metadata: PostWithRelations;
+  structured_data: Record<string, any> | null;
 }
 
 // ----------------------------------------------------------------------------
@@ -175,16 +191,16 @@ export const getAll = async (filters: PostFilters = {}): Promise<{
 
   // Filtros adicionales
   if (category_id) {
-    query = query.whereIn('posts.id', function () {
-      this.select('post_id')
+    query = query.whereIn('posts.id', (qb) => {
+      qb.select('post_id')
         .from('post_category')
         .where('category_id', category_id);
     });
   }
 
   if (tag_id) {
-    query = query.whereIn('posts.id', function () {
-      this.select('post_id')
+    query = query.whereIn('posts.id', (qb) => {
+      qb.select('post_id')
         .from('post_tag')
         .where('tag_id', tag_id);
     });
@@ -278,7 +294,7 @@ export const getById = async (id: number): Promise<PostWithRelations | null> => 
  * Incrementa view_count atómicamente
  * ============================================================================
  */
-export const getBySlug = async (slug: string): Promise<PostWithRelations | null> => {
+export const getBySlug = async (slug: string): Promise<RenderedPost | null> => {
   // Incrementar view_count atómicamente
   await db('posts')
     .where({ slug })
@@ -300,11 +316,110 @@ export const getBySlug = async (slug: string): Promise<PostWithRelations | null>
   const { categories, tags } = await getPostRelations(post.id);
   const featured_image = await getFeaturedImage(post.featured_image_id);
 
-  return {
+  const postData: PostWithRelations = {
     ...post,
     categories,
     tags,
     featured_image
+  };
+
+  // 1. Obtener los Templates necesarios
+  const [header, footer, blogLayout] = await Promise.all([
+    db('templates').where({ type: 'header', is_active: true }).first(),
+    db('templates').where({ type: 'footer', is_active: true }).first(),
+    db('templates').where({ type: 'blog_single', is_active: true }).first()
+  ]);
+
+  // 2. Preparar el HTML principal del post con Handlebars (si existe el layout)
+  let mainContent = postData.content;
+  if (blogLayout) {
+    const template = Handlebars.compile(blogLayout.content);
+    // Usamos el Data Preparer para preparar los datos semánticos
+    const mappedData = prepareTemplateData(postData);
+    mainContent = template(mappedData);
+  }
+
+  // 3. Unificar con Header y Footer
+  const headerHtml = header?.content || '';
+  const footerHtml = footer?.content || '';
+
+  const fullHtml = `
+    ${headerHtml}
+    ${mainContent}
+    ${footerHtml}
+  `;
+
+  // 4. Compilar CSS Maestro del Post
+  const themeSettings = await db('theme_settings').first();
+  const compiledCss = await compileTailwindCSS(fullHtml, themeSettings || {}, `master-post-${post.id}`);
+
+  // 5. Generar datos estructurados Schema.org
+  const structuredDataPost: StructuredDataPost = {
+    meta_title: postData.meta_title,
+    meta_description: postData.meta_description,
+    featured_image: postData.featured_image,
+    published_at: postData.published_at,
+    author_name: postData.author_name,
+    categories: postData.categories,
+    title: postData.title,
+    slug: postData.slug
+  };
+  const structuredData = generateStructuredData(structuredDataPost);
+
+  return {
+    html: fullHtml,
+    css: compiledCss,
+    metadata: postData,
+    structured_data: structuredData
+  };
+};
+
+/**
+ * ============================================================================
+ * DATA PREPARER - TEMPLATE ENGINE HELPER
+ * ============================================================================
+ * Transforma los datos crudos del post en objetos semánticos listos para ser 
+ * renderizados por el motor de templates (Handlebars).
+ * ============================================================================
+ */
+const prepareTemplateData = (post: PostWithRelations) => {
+  // 1. Cálculo de Reading Time (basado en promedio de 200 palabras por minuto)
+  const words = post.content ? post.content.split(/\s+/).length : 0;
+  const readingTimeMinutes = Math.ceil(words / 200);
+  const reading_time = readingTimeMinutes + " min";
+
+  // 2. Formateo de fecha usando Intl (Español elegante)
+  const dateOptions: Intl.DateTimeFormatOptions = {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  };
+  const pubDate = post.published_at;
+  const formattedDate = pubDate
+    ? new Intl.DateTimeFormat('es-ES', dateOptions).format(new Date(pubDate))
+    : 'Borrador';
+
+  // 3. Fallback inteligente de imagen destacada
+  const featured_image_url = post.featured_image
+    ? `${config.siteUrl}/uploads/${post.featured_image}`
+    : 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&q=80&w=1200';
+
+  // 4. Obtener categoría primaria (la primera asociada)
+  const categoryPrimary = post.categories?.[0]?.name || "General";
+
+  // 5. Mapeo final optimizado ({{{content}}} para inyección segura)
+  return {
+    title: post.title,
+    slug: post.slug,
+    excerpt: post.excerpt || post.title,
+    content: post.content,
+    featured_image: featured_image_url,
+    author_name: post.author_name || 'Anónimo',
+    published_at: formattedDate,
+    reading_time: reading_time,
+    category_primary: categoryPrimary,
+    tags: post.tags || [],
+    categories: post.categories || []
   };
 };
 
@@ -317,7 +432,7 @@ export const getBySlug = async (slug: string): Promise<PostWithRelations | null>
  * ============================================================================
  */
 export const create = async (data: CreatePostDTO, authorId: number): Promise<{ id: number; slug: string }> => {
-  return db.transaction(async (trx) => {
+  return db.transaction(async (trx: Knex.Transaction) => {
     const {
       title,
       slug: providedSlug,
@@ -383,7 +498,7 @@ export const create = async (data: CreatePostDTO, authorId: number): Promise<{ i
  * ============================================================================
  */
 export const update = async (id: number, data: UpdatePostDTO): Promise<void> => {
-  return db.transaction(async (trx) => {
+  return db.transaction(async (trx: Knex.Transaction) => {
     const {
       title,
       slug: providedSlug,
@@ -476,7 +591,7 @@ export const getRelated = async (postId: number, limit: number = 3): Promise<Pos
     return [];
   }
 
-  const tagIds = currentTags.map(t => t.tag_id);
+  const tagIds = currentTags.map((t: any) => t.tag_id);
 
   // Buscar posts con tags similares (excluyendo el post actual)
   const relatedList = await db('posts')

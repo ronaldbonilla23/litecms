@@ -4,6 +4,7 @@ import BlotFormatter from 'quill-blot-formatter';
 import 'react-quill-new/dist/quill.snow.css';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
+import { uploadUrl } from '../lib/urls';
 
 interface RichTextEditorProps {
   content: string;
@@ -58,7 +59,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
   };
 
   const selectMedia = (filename: string) => {
-    const imageUrl = `http://localhost:3000/uploads/${filename}`;
+    const imageUrl = uploadUrl(filename);
     const editor = reactQuillRef.current?.getEditor();
     
     if (editor) {
@@ -174,7 +175,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
                       {mediaList.map((item: any) => (
                           <div key={item.id} onClick={() => selectMedia(item.filename)}
                               className="group relative aspect-square bg-black/40 rounded-xl overflow-hidden border border-white/5 hover:border-[#C2F86C] transition-all cursor-pointer">
-                              <img src={`http://localhost:3000/uploads/${item.filename}`} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                              <img src={uploadUrl(item.filename)} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
                               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-[#C2F86C]/10 backdrop-blur-[2px] transition-opacity">
                                   <span className="bg-[#C2F86C] text-black font-bold text-xs px-3 py-1.5 rounded-full">INSERTAR</span>
                               </div>

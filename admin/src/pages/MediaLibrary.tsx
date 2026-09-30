@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
+import { uploadUrl } from '../lib/urls';
 
 interface MediaItem {
     id: number;
@@ -75,7 +76,7 @@ export const MediaLibrary = () => {
 
     const copyUrl = (e: React.MouseEvent, filename: string) => {
         e.stopPropagation();
-        navigator.clipboard.writeText(`http://localhost:3000/uploads/${filename}`);
+        navigator.clipboard.writeText(new URL(uploadUrl(filename), window.location.origin).href);
         toast.success('URL copiada!');
     };
 
@@ -164,7 +165,7 @@ export const MediaLibrary = () => {
                                         className={`group relative aspect-square bg-[#131313] border ${selectedItem?.id === item.id ? 'border-primary' : 'border-white/5'} rounded-[2rem] overflow-hidden hover:border-primary/50 transition-all cursor-pointer`}
                                     >
                                         <img
-                                            src={`http://localhost:3000/uploads/${item.filename}`}
+                                            src={uploadUrl(item.filename)}
                                             alt={item.alt_text || item.filename}
                                             className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                                         />
@@ -213,7 +214,7 @@ export const MediaLibrary = () => {
                                             >
                                                 <td className="px-4 py-4">
                                                     <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/5 flex items-center justify-center shrink-0">
-                                                        <img src={`http://localhost:3000/uploads/${item.filename}`} alt={item.alt_text || ''} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                                        <img src={uploadUrl(item.filename)} alt={item.alt_text || ''} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-4">
@@ -262,7 +263,7 @@ export const MediaLibrary = () => {
                     </div>
 
                     <div className="aspect-video bg-surface-container-low rounded-2xl overflow-hidden border border-white/5">
-                        <img src={`http://localhost:3000/uploads/${selectedItem.filename}`} alt={selectedItem.alt_text || ''} className="w-full h-full object-cover" />
+                        <img src={uploadUrl(selectedItem.filename)} alt={selectedItem.alt_text || ''} className="w-full h-full object-cover" />
                     </div>
 
                     <div className="space-y-2 text-xs text-on-surface-variant">

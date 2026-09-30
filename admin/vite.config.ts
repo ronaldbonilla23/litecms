@@ -1,16 +1,19 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// El admin se publica dentro de core en /admin (ver core/src/index.ts)
+const CORE_URL = 'http://localhost:3000'
+
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/admin/',
   plugins: [react()],
   server: {
+    // En desarrollo, Vite reenvía al servidor core todo lo que no es el admin
     proxy: {
-      // Esto le dice a Vite: "Si ves algo que empiece por /api, mándalo al puerto 3000"
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-      },
+      '/api': { target: CORE_URL, changeOrigin: true },
+      '/uploads': { target: CORE_URL, changeOrigin: true },
+      '/css': { target: CORE_URL, changeOrigin: true },
     },
   },
 })

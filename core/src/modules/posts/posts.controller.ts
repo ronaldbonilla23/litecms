@@ -1,6 +1,8 @@
 import type { Request, Response, NextFunction } from 'express';
 import { AuthRequest } from '../auth/auth.middleware';
 import * as postsService from './posts.service';
+import { compileTailwindCSS } from '../../services/tailwind.service';
+import db from '../../database';
 
 /**
  * ============================================================================
@@ -13,7 +15,7 @@ import * as postsService from './posts.service';
 // ----------------------------------------------------------------------------
 // GET /api/posts - Listar todos los posts (con filtros y paginación)
 // ----------------------------------------------------------------------------
-export const getAllPosts = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getAllPosts = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const {
       status,
@@ -27,12 +29,13 @@ export const getAllPosts = async (req: Request, res: Response, next: NextFunctio
     } = req.query;
 
     const filters: postsService.PostFilters = {
-      status: status as string,
+      // Los visitantes solo ven publicados; el filtro por estado es exclusivo del admin
+      status: req.user ? (status as string) : 'published',
       category_id: category ? parseInt(category as string, 10) : undefined,
       tag_id: tag ? parseInt(tag as string, 10) : undefined,
       author_id: author ? parseInt(author as string, 10) : undefined,
       page: page ? parseInt(page as string, 10) : 1,
-      limit: limit ? parseInt(limit as string, 10) : 10,
+      limit: limit ? Math.min(parseInt(limit as string, 10) || 10, 100) : 10,
       sort: sort as string || 'published_at',
       order: (order as 'ASC' | 'DESC') || 'DESC'
     };
@@ -49,7 +52,7 @@ export const getAllPosts = async (req: Request, res: Response, next: NextFunctio
 // ----------------------------------------------------------------------------
 // GET /api/posts/:slug - Obtener post por slug (público)
 // ----------------------------------------------------------------------------
-export const getPostBySlug = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getPostBySlug = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const slug = Array.isArray(req.params.slug) ? req.params.slug[0] : req.params.slug;
 
@@ -60,7 +63,8 @@ export const getPostBySlug = async (req: Request, res: Response, next: NextFunct
 
     const post = await postsService.getBySlug(slug);
 
-    if (!post) {
+    // Un borrador solo lo puede ver un usuario autenticado (vista previa)
+    if (!post || (!req.user && post.metadata.status !== 'published')) {
       res.status(404).json({ error: 'Post no encontrado' });
       return;
     }
@@ -161,6 +165,15 @@ export const createPost = async (req: AuthRequest, res: Response, next: NextFunc
       tag_ids
     }, (req.user as any)?.id);
 
+    // Generar CSS maestro del post (al igual que las páginas)
+    try {
+      const themeSettings = await db('theme_settings').first();
+      await compileTailwindCSS(content, themeSettings || {}, `master-post-${result.id}`);
+    } catch (cssError) {
+      console.error('[Posts Controller] Error generando CSS:', cssError);
+      // No bloqueamos la creación del post si falla el CSS
+    }
+
     res.status(201).json({
       message: 'Post creado exitosamente',
       ...result
@@ -185,6 +198,16 @@ export const updatePost = async (req: AuthRequest, res: Response, next: NextFunc
     const id = parseInt(idParam, 10);
 
     await postsService.update(id, req.body);
+
+    // Regenerar CSS si el contenido cambió
+    if (req.body.content) {
+      try {
+        const themeSettings = await db('theme_settings').first();
+        await compileTailwindCSS(req.body.content, themeSettings || {}, `master-post-${id}`);
+      } catch (cssError) {
+        console.error('[Posts Controller] Error regenerando CSS:', cssError);
+      }
+    }
 
     res.json({ message: 'Post actualizado exitosamente' });
   } catch (error) {
