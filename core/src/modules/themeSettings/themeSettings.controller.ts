@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import db from '../../database';
+import { invalidateAllCss } from '../render/css.service';
 
 export const getThemeSettings = async (req: Request, res: Response) => {
     try {
@@ -19,28 +20,34 @@ export const getThemeSettings = async (req: Request, res: Response) => {
     }
 };
 
+// Campos que el cliente nunca puede escribir directamente
+const PROTECTED_COLUMNS = new Set(['id', 'created_at', 'updated_at']);
+
 export const updateThemeSettings = async (req: Request, res: Response) => {
-    const settings = req.body;
     try {
+        // Solo aceptamos columnas que existen en la tabla (evita sobrescribir el id o romper el SQL)
+        const columns = await db('theme_settings').columnInfo();
+        const settings = Object.fromEntries(
+            Object.entries(req.body ?? {}).filter(([key]) => key in columns && !PROTECTED_COLUMNS.has(key))
+        );
+
         // Verificar si ya existe una configuración
         const existing = await db('theme_settings').first();
 
         if (existing) {
-            // Actualizar la fila existente
             await db('theme_settings')
                 .where({ id: existing.id })
-                .update({
-                    ...settings,
-                    updated_at: db.fn.now()
-                });
+                .update({ ...settings, updated_at: db.fn.now() });
         } else {
-            // Insertar nueva configuración
             await db('theme_settings').insert({
                 ...settings,
                 created_at: db.fn.now(),
                 updated_at: db.fn.now()
             });
         }
+
+        // Colores y fuentes forman parte del CSS compilado de cada página/post
+        await invalidateAllCss();
 
         res.json({ message: 'Design System actualizado 🚀' });
     } catch (error: any) {

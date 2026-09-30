@@ -26,7 +26,7 @@ export interface StructuredDataPost {
  * @param post - Datos del post con metadatos
  * @returns Objeto JSON compatible con Schema.org Article
  */
-export const generateStructuredData = (post: StructuredDataPost): Record<string, any> | null => {
+export const generateStructuredData = (post: StructuredDataPost, options: { logoUrl?: string | null } = {}): Record<string, any> | null => {
   if (!post) return null;
 
   const baseUrl = config.siteUrl;
@@ -57,15 +57,7 @@ export const generateStructuredData = (post: StructuredDataPost): Record<string,
       'name': post.author_name || 'Anónimo',
       'url': `${baseUrl}/author/${post.author_name?.toLowerCase().replace(/\s+/g, '-') || 'anonymous'}`
     },
-    'publisher': {
-      '@type': 'Organization',
-      'name': 'LiteCMS',
-      'url': baseUrl,
-      'logo': {
-        '@type': 'ImageObject',
-        'url': `${baseUrl}/uploads/logo.png`
-      }
-    },
+    'publisher': generateOrganization(options.logoUrl),
     'url': postUrl
   };
 
@@ -77,3 +69,73 @@ export const generateStructuredData = (post: StructuredDataPost): Record<string,
 
   return structuredData;
 };
+
+
+// ----------------------------------------------------------------------------
+// Datos estructurados del sitio y de páginas (SEO + AEO)
+// ----------------------------------------------------------------------------
+
+const toAbsolute = (url: string): string => (url.startsWith('http') ? url : `${config.siteUrl}${url}`);
+
+// Organización que publica el sitio. El logo sale de Theme Settings (si está configurado)
+export const generateOrganization = (logoUrl?: string | null): Record<string, any> => ({
+  '@type': 'Organization',
+  'name': config.siteName,
+  'url': config.siteUrl,
+  ...(logoUrl ? { 'logo': { '@type': 'ImageObject', 'url': toAbsolute(logoUrl) } } : {})
+});
+
+export interface StructuredDataPage {
+  title: string;
+  description: string;
+  url: string;
+  imageUrl?: string | null;
+  updatedAt?: string | null;
+  isHome: boolean;
+  logoUrl?: string | null;
+}
+
+/**
+ * WebPage para cada página. En la portada se añade también WebSite, que
+ * identifica el sitio completo ante buscadores y asistentes de IA.
+ */
+export const generatePageStructuredData = (page: StructuredDataPage): Record<string, any>[] => {
+  const webPage: Record<string, any> = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    '@id': page.url,
+    'url': page.url,
+    'name': page.title,
+    'description': page.description,
+    'inLanguage': config.siteLang,
+    'isPartOf': { '@type': 'WebSite', 'name': config.siteName, 'url': config.siteUrl },
+    ...(page.imageUrl ? { 'primaryImageOfPage': { '@type': 'ImageObject', 'url': toAbsolute(page.imageUrl) } } : {}),
+    ...(page.updatedAt ? { 'dateModified': page.updatedAt } : {})
+  };
+
+  if (!page.isHome) return [webPage];
+
+  return [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      'name': config.siteName,
+      'url': config.siteUrl,
+      'inLanguage': config.siteLang,
+      'publisher': generateOrganization(page.logoUrl)
+    },
+    webPage
+  ];
+};
+
+// Migas de pan: ayudan a buscadores a entender la jerarquía (Inicio › Blog › Post)
+export const generateBreadcrumbs = (items: Array<{ name: string; url: string }>): Record<string, any> => ({
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  'itemListElement': items.map((item, index) => ({
+    '@type': 'ListItem',
+    'position': index + 1,
+    'name': item.name,
+    'item': toAbsolute(item.url)
+  }))
+});

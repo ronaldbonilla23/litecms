@@ -51,6 +51,14 @@ PUT /api/media/:id/seo (Optimización SEO)
 
 GET/POST/PUT/DELETE /api/pages (CRUD de contenidos)
 
+🌐 Sitio público (SSR en /core, sin app frontend):
+- `core/src/modules/render/`: toda URL que no sea /api, /admin o /uploads se renderiza en el servidor a HTML completo (SEO, Open Graph, JSON-LD, CSS). No crear una SPA para el sitio público: los bots de IA no ejecutan JavaScript.
+- Rutas: `/` y `/:slug` → páginas publicadas; `/blog/:slug` → posts; slug inexistente → redirección 301 registrada o 404 (página "/404" si existe).
+- CSS: Tailwind compilado por página/post, guardado en `compiled_css` y servido en `/css/page-:id.css?v=hash`. Cambios en plantillas o theme settings lo invalidan.
+- Caché: el HTML se cachea en memoria y se vacía con cualquier escritura exitosa en /api.
+- SEO/AEO: `/robots.txt`, `/llms.txt`, `/sitemap.xml`; redirecciones 301 automáticas al cambiar un slug; `<img>` de /uploads reciben srcset WebP.
+- El contenido de posts se sanitiza al guardar (`services/sanitize.service.ts`); plantillas y páginas son HTML de confianza del admin.
+
 🚀 3. Flujos de Trabajo (Workflow Skills)
 Reglas para la generación de nuevo código:
 

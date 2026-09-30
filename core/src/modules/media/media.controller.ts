@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { MediaSchema } from '../../../../shared/types';
 import { config } from '../../config';
+import { generateImageVariants, deleteImageVariants, parseVariants, type ImageVariant } from '../../services/images.service';
 
 export const uploadFile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -17,12 +18,23 @@ export const uploadFile = async (req: Request, res: Response, next: NextFunction
         const { filename, originalname, mimetype, size } = req.file;
         const filePath = `/uploads/${filename}`;
 
+        // Variantes WebP para srcset. Si falla (imagen corrupta), la subida sigue siendo válida.
+        let image = { width: null as number | null, height: null as number | null, variants: [] as ImageVariant[] };
+        try {
+            image = await generateImageVariants(filename);
+        } catch (imageError: any) {
+            console.warn(`[Media] No se pudieron generar variantes de ${filename}:`, imageError.message);
+        }
+
         const [id] = await db('media').insert({
             filename,
             original_name: originalname,
             mimetype,
             size,
-            path: filePath
+            path: filePath,
+            width: image.width,
+            height: image.height,
+            variants: JSON.stringify(image.variants)
         });
 
         const newMedia = await db('media').where({ id }).first();
@@ -62,6 +74,8 @@ export const deleteMedia = async (req: Request, res: Response, next: NextFunctio
             // Si el archivo físico no existe, lo ignoramos para borrar de todas formas el registro
             console.warn(`El archivo físico ${filePhysicalPath} no existía o no se pudo borrar.`);
         }
+
+        await deleteImageVariants(parseVariants(mediaItem.variants));
 
         // Eliminar de base de datos
         await db('media').where({ id }).delete();

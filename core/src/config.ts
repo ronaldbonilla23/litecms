@@ -32,6 +32,10 @@ export const config = {
     root: ROOT,
     port: Number(process.env.PORT) || 3000,
     siteUrl: (process.env.SITE_URL || 'http://localhost:3000').replace(/\/$/, ''),
+    siteName: process.env.SITE_NAME || 'LiteCMS',
+    siteLang: process.env.SITE_LANG || 'es',
+    // false en entornos de prueba/staging: robots.txt bloquea todo y las páginas llevan noindex
+    indexable: process.env.SITE_INDEXABLE !== 'false',
     corsOrigins: parseList(process.env.CORS_ORIGINS, [
         'http://localhost:5173',
         'http://localhost:5174',
@@ -44,7 +48,6 @@ export const config = {
         database: path.join(ROOT, 'content', 'litecms.sqlite'),
         uploads: path.join(ROOT, 'content', 'uploads'),
         publicDir: path.join(ROOT, 'core', 'public'),
-        css: path.join(ROOT, 'core', 'public', 'css'),
         adminDist: path.join(ROOT, 'admin', 'dist'),
         // Relativo a este archivo: vale para src/*.ts (ts-node) y dist/*.js (compilado)
         migrations: path.join(__dirname, 'database', 'migrations'),
