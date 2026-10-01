@@ -1,14 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
 import { config } from '../../config';
-
-const baseUploadsDir = config.paths.uploads;
-
-if (!fs.existsSync(baseUploadsDir)) {
-    fs.mkdirSync(baseUploadsDir, { recursive: true });
-}
 
 const EXTENSION_BY_MIME: Record<string, string> = {
     'image/jpeg': '.jpg',
@@ -28,16 +21,10 @@ const sanitizeBaseName = (originalName: string): string => {
     return base || 'archivo';
 };
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, baseUploadsDir);
-    },
-    filename: (req, file, cb) => {
-        // La extensión sale del mimetype validado, nunca del nombre que manda el cliente
-        const extension = EXTENSION_BY_MIME[file.mimetype] ?? '';
-        cb(null, `${Date.now()}-${sanitizeBaseName(file.originalname)}${extension}`);
-    }
-});
+// Nombre final: "<timestamp>-<nombre-saneado>.<ext>". La extensión sale del mimetype validado,
+// nunca del nombre que manda el cliente.
+export const buildUploadFilename = (originalName: string, mimetype: string): string =>
+    `${Date.now()}-${sanitizeBaseName(originalName)}${EXTENSION_BY_MIME[mimetype] ?? ''}`;
 
 const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
     if (file.mimetype in EXTENSION_BY_MIME) {
@@ -49,8 +36,9 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
     }
 };
 
+// En memoria: el archivo se valida y procesa antes de guardarse en el almacenamiento configurado
 export const upload = multer({
-    storage,
+    storage: multer.memoryStorage(),
     fileFilter,
     limits: { fileSize: config.maxUploadBytes, files: 1 },
 });
@@ -71,24 +59,13 @@ const matchesSignature = (header: Buffer, mimetype: string): boolean => {
 
 /**
  * El mimetype lo declara el cliente y se puede falsificar.
- * Este middleware lee los primeros bytes del archivo ya guardado y lo borra si no es una imagen real.
+ * Este middleware revisa los primeros bytes del archivo y lo rechaza si no es una imagen real.
  */
-export const verifyImageSignature = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const verifyImageSignature = (req: Request, res: Response, next: NextFunction): void => {
     if (!req.file) return next();
-
-    try {
-        const handle = await fs.promises.open(req.file.path, 'r');
-        const header = Buffer.alloc(12);
-        await handle.read(header, 0, 12, 0);
-        await handle.close();
-
-        if (!matchesSignature(header, req.file.mimetype)) {
-            await fs.promises.unlink(req.file.path).catch(() => undefined);
-            res.status(400).json({ error: 'El contenido del archivo no corresponde a una imagen válida' });
-            return;
-        }
-        next();
-    } catch (error) {
-        next(error);
+    if (!matchesSignature(req.file.buffer.subarray(0, 12), req.file.mimetype)) {
+        res.status(400).json({ error: 'El contenido del archivo no corresponde a una imagen válida' });
+        return;
     }
+    next();
 };

@@ -1,0 +1,5 @@
+content/
+release/
+**/node_modules
+core/dist
+admin/dist

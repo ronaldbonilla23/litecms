@@ -1,0 +1,20 @@
+# LiteCMS con Docker Compose
+#   1. Copia este archivo y define JWT_SECRET y SITE_URL
+#   2. docker compose up -d
+#   3. Abre http://localhost:3000/admin para crear el administrador
+services:
+  litecms:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?Define JWT_SECRET (cadena larga y aleatoria)}
+      SITE_URL: ${SITE_URL:-http://localhost:3000}
+      SITE_NAME: ${SITE_NAME:-LiteCMS}
+      SITE_LANG: ${SITE_LANG:-es}
+    volumes:
+      - litecms-content:/app/content
+
+volumes:
+  litecms-content:

@@ -1,29 +1,64 @@
 import knex, { type Knex } from 'knex';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
+import crypto from 'crypto';
 import { config } from './config';
+import Client_Libsql from './database/libsqlDialect';
 
-// La base de datos vive en /content, fuera del código del servidor.
+/**
+ * Conexión a la base de datos:
+ *   - Por defecto: SQLite en content/litecms.sqlite (VPS, Docker, cPanel).
+ *   - DATABASE_URL con libsql://, wss://, https:// o file: → libSQL / Turso (EXPERIMENTAL,
+ *     pensado para serverless como Vercel). El token va en DATABASE_AUTH_TOKEN.
+ *   - Tests: SQLite en memoria (o libSQL en un archivo temporal con LITECMS_TEST_DRIVER=libsql).
+ */
 const isTestEnv = process.env.NODE_ENV === 'test';
 
-if (!isTestEnv && !fs.existsSync(config.paths.content)) {
+const libsqlUrl = (): string | null => {
+    if (isTestEnv && process.env.LITECMS_TEST_DRIVER === 'libsql') {
+        // Un archivo por módulo de test: cada archivo de tests tiene su propia BD
+        return `file:${path.join(os.tmpdir(), `litecms-test-${process.pid}-${crypto.randomUUID()}.db`)}`;
+    }
+    const url = isTestEnv ? null : process.env.DATABASE_URL;
+    if (!url) return null;
+    if (!/^(libsql|wss?|https?|file):/.test(url)) {
+        throw new Error('DATABASE_URL debe empezar con libsql://, wss://, https:// o file:');
+    }
+    const token = process.env.DATABASE_AUTH_TOKEN;
+    if (!token) return url;
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}authToken=${encodeURIComponent(token)}`;
+};
+
+const remoteUrl = libsqlUrl();
+
+if (!isTestEnv && !remoteUrl && !fs.existsSync(config.paths.content)) {
     fs.mkdirSync(config.paths.content, { recursive: true });
 }
 
-const db = knex({
-    client: 'sqlite3',
-    connection: {
-        filename: isTestEnv ? ':memory:' : config.paths.database, // Usar SQLite en memoria para tests
-    },
-    useNullAsDefault: true, // Configuración obligatoria de Knex para SQLite
-});
+const db = knex(remoteUrl
+    ? {
+        client: Client_Libsql as unknown as typeof Knex.Client,
+        connection: { filename: remoteUrl },
+        useNullAsDefault: true,
+    }
+    : {
+        client: 'sqlite3',
+        connection: {
+            filename: isTestEnv ? ':memory:' : config.paths.database, // Usar SQLite en memoria para tests
+        },
+        useNullAsDefault: true, // Configuración obligatoria de Knex para SQLite
+    });
+
+export const databaseDriver = remoteUrl ? 'libsql' : 'sqlite';
 
 // Función de prueba para verificar que la conexión es exitosa
 export const checkDatabaseConnection = async () => {
     try {
         // Hacemos una consulta muy básica: pedirle a SQLite la versión actual
         const result = await db.raw('SELECT sqlite_version() as version');
-        console.log(`📦 Base de datos LiteCMS conectada (SQLite v${result[0].version})`);
+        console.log(`📦 Base de datos LiteCMS conectada (${databaseDriver === 'libsql' ? 'libSQL' : 'SQLite'} v${result[0].version})`);
     } catch (error) {
         console.error('[LiteCMS DB Error]: No se pudo conectar a SQLite', error);
     }

@@ -72,6 +72,13 @@ GET/POST/PUT/DELETE /api/pages (CRUD de contenidos)
 - Temas en `/themes/<nombre>/` (theme.json + plantillas). `core/src/themes/themes.service.ts` aplica el tema de forma idempotente y nunca sobrescribe contenido existente. Guía: `themes/README.md`.
 - Nuevos puntos de extensión: añadir el hook en `FILTER_HOOKS` o `ACTION_HOOKS` (hooks.ts), invocarlo con `applyFilters` o `fireAction` y documentarlo en `plugins/README.md`.
 
+📦 Distribución:
+- Scripts de raíz: `npm run setup | build | start | dev | test | package`. `scripts/package.mjs` genera `release/litecms/` (+ zip): un paquete autocontenido para cPanel, Docker y VPS (`npm ci --omit=dev && node app.js`). `Dockerfile` reutiliza ese paquete.
+- `core/src/index.ts` exporta `ready()` (migraciones y plugins). En Vercel (`VERCEL=1`) no hay `listen`: `api/index.js` exporta la app y `ready()` corre con la primera petición.
+- Base de datos: SQLite por defecto; `DATABASE_URL=libsql://…` usa el dialecto `core/src/database/libsqlDialect.ts` (Turso, experimental). `LITECMS_TEST_DRIVER=libsql npm test` ejecuta toda la suite sobre libSQL.
+- Archivos subidos: `core/src/storage/` (`local`, `s3` y `vercel-blob`). Nunca escribir en `content/uploads` directamente: usar `getStorage()`. Las URLs públicas siempre son `/uploads/<archivo>`.
+- `packages/create-litecms/`: CLI `npx create-litecms <carpeta>` (descarga desde GitHub o `--from` una copia local).
+
 🚀 3. Flujos de Trabajo (Workflow Skills)
 Reglas para la generación de nuevo código:
 
