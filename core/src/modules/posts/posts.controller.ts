@@ -1,8 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { AuthRequest } from '../auth/auth.middleware';
 import * as postsService from './posts.service';
-import { compileTailwindCSS } from '../../services/tailwind.service';
-import db from '../../database';
 
 /**
  * ============================================================================
@@ -165,15 +163,6 @@ export const createPost = async (req: AuthRequest, res: Response, next: NextFunc
       tag_ids
     }, (req.user as any)?.id);
 
-    // Generar CSS maestro del post (al igual que las páginas)
-    try {
-      const themeSettings = await db('theme_settings').first();
-      await compileTailwindCSS(content, themeSettings || {}, `master-post-${result.id}`);
-    } catch (cssError) {
-      console.error('[Posts Controller] Error generando CSS:', cssError);
-      // No bloqueamos la creación del post si falla el CSS
-    }
-
     res.status(201).json({
       message: 'Post creado exitosamente',
       ...result
@@ -198,16 +187,6 @@ export const updatePost = async (req: AuthRequest, res: Response, next: NextFunc
     const id = parseInt(idParam, 10);
 
     await postsService.update(id, req.body);
-
-    // Regenerar CSS si el contenido cambió
-    if (req.body.content) {
-      try {
-        const themeSettings = await db('theme_settings').first();
-        await compileTailwindCSS(req.body.content, themeSettings || {}, `master-post-${id}`);
-      } catch (cssError) {
-        console.error('[Posts Controller] Error regenerando CSS:', cssError);
-      }
-    }
 
     res.json({ message: 'Post actualizado exitosamente' });
   } catch (error) {

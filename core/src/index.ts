@@ -19,7 +19,8 @@ import templatesRoutes from './modules/templates/templates.routes';
 import postsRoutes from './modules/posts/posts.routes';
 import categoriesRoutes from './modules/categories/categories.routes';
 import tagsRoutes from './modules/tags/tags.routes';
-import { getSitemap } from './controllers/sitemap.controller';
+import renderRoutes from './modules/render/render.routes';
+import { clearRenderCache } from './modules/render/render.service';
 
 
 const app = express();
@@ -55,6 +56,17 @@ const authLimiter = rateLimit({
     message: { error: 'Demasiados intentos. Intenta de nuevo en unos minutos.' },
 });
 
+// Cualquier escritura exitosa en la API (guardar página, post, plantilla, medios...)
+// invalida el HTML cacheado del sitio público
+app.use('/api', (req: Request, res: Response, next: NextFunction) => {
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+        res.on('finish', () => {
+            if (res.statusCode < 400) clearRenderCache();
+        });
+    }
+    next();
+});
+
 // Ruta de diagnóstico (Health Check)
 app.get('/api/health', (req: Request, res: Response) => {
     res.json({ message: 'LiteCMS API funcionando correctamente' });
@@ -75,15 +87,11 @@ app.use('/api/posts', postsRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/tags', tagsRoutes);
 
-// Sitemap dinámico (ruta pública)
-app.get('/sitemap.xml', getSitemap);
-
 // Servir archivos estáticos de forma pública
 app.use('/uploads', express.static(config.paths.uploads));
 
-// Servir archivos CSS compilados y toda la carpeta public
-app.use('/css', express.static(config.paths.css));
-app.use(express.static(config.paths.publicDir));
+// Archivos estáticos opcionales (favicon.ico, verificaciones de Google, etc.)
+app.use(express.static(config.paths.publicDir, { index: false }));
 
 // Panel de administración (build de /admin). Cualquier ruta /admin/* devuelve el index.html de la SPA.
 const adminIndex = path.join(config.paths.adminDist, 'index.html');
@@ -94,6 +102,14 @@ if (fs.existsSync(adminIndex)) {
     });
 }
 
+
+// Rutas de la API inexistentes: JSON, nunca el sitio público
+app.use('/api', (req: Request, res: Response) => {
+    res.status(404).json({ error: 'Ruta de API no encontrada' });
+});
+
+// Sitio público renderizado en el servidor: robots.txt, llms.txt, sitemap.xml, CSS y páginas
+app.use(renderRoutes);
 
 // MANEJADOR GLOBAL DE ERRORES (Cumpliendo el Technical Brief)
 app.use((err: Error | any, req: Request, res: Response, next: NextFunction) => {

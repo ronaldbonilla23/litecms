@@ -1,10 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
 import app from '../../index';
-import db from '../../database';
+import db, { runMigrations } from '../../database';
+import sharp from 'sharp';
 import fs from 'fs';
 import path from 'path';
 import jwt from 'jsonwebtoken';
+import { config } from '../../config';
 
 // Mock secret JWT
 process.env.JWT_SECRET = 'test_secret';
@@ -14,16 +16,8 @@ describe('Media Module Tests', () => {
     let uploadedMediaId: number;
 
     beforeAll(async () => {
-        // Crear tabla en SQLite en memoria
-        await db.schema.createTable('media', (table) => {
-            table.increments('id').primary();
-            table.string('filename').unique().notNullable();
-            table.string('original_name').notNullable();
-            table.string('mimetype').notNullable();
-            table.integer('size').notNullable();
-            table.string('path').notNullable();
-            table.timestamps(true, true);
-        });
+        // Esquema real: mismas migraciones que en producción, sobre SQLite en memoria
+        await runMigrations();
 
         // Crear token mock
         mockToken = jwt.sign({ id: 1, email: 'admin@test.com', role: 'admin' }, process.env.JWT_SECRET as string, { expiresIn: '1h' });
@@ -48,6 +42,30 @@ describe('Media Module Tests', () => {
         expect(res.body.media).toHaveProperty('path');
 
         uploadedMediaId = res.body.media.id;
+    });
+
+    it('Debe generar variantes WebP para una imagen real', async () => {
+        const png = await sharp({ create: { width: 1200, height: 600, channels: 3, background: '#C2F86C' } }).png().toBuffer();
+
+        const res = await request(app)
+            .post('/api/media/upload')
+            .set('Authorization', `Bearer ${mockToken}`)
+            .attach('file', png, 'Portada Principal.png');
+
+        expect(res.status).toBe(201);
+        expect(res.body.media.width).toBe(1200);
+        const variants = JSON.parse(res.body.media.variants);
+        expect(variants.map((v: { width: number }) => v.width)).toEqual([480, 960, 1200]);
+        for (const variant of variants) {
+            expect(fs.existsSync(path.join(config.paths.uploads, variant.filename))).toBe(true);
+        }
+
+        // Al borrar la imagen se borran también sus variantes
+        const del = await request(app).delete(`/api/media/${res.body.media.id}`).set('Authorization', `Bearer ${mockToken}`);
+        expect(del.status).toBe(200);
+        for (const variant of variants) {
+            expect(fs.existsSync(path.join(config.paths.uploads, variant.filename))).toBe(false);
+        }
     });
 
     it('Debe rechazar un archivo con extensión .jpg que no es una imagen real', async () => {

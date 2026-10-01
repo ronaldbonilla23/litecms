@@ -1,11 +1,12 @@
 // tailwind.service.ts
-// Servicio de compilación Tailwind CSS v3 - Con guardado a archivo
+// Servicio de compilación Tailwind CSS v3
 
-import * as fs from 'fs';
-import * as path from 'path';
-import { config } from '../config';
 
-export const compileTailwindCSS = async (htmlContent: string, themeSettings: any, pageId?: string): Promise<string> => {
+/**
+ * Compila el CSS mínimo (Tailwind) para un HTML dado.
+ * El resultado se guarda en la BD (columna compiled_css) y se sirve desde /css/:tipo-:id.css.
+ */
+export const compileTailwindCSS = async (htmlContent: string, themeSettings: any): Promise<string> => {
   try {
     const postcss = require('postcss');
     const tailwindcss = require('tailwindcss');
@@ -112,51 +113,9 @@ export const compileTailwindCSS = async (htmlContent: string, themeSettings: any
 
     const result = await postcss([tailwindcss(config), autoprefixer]).process(cssInput, { from: undefined });
 
-    const css = result.css;
-
-    console.log('[Tailwind] CSS generado:', css ? css.length : 0, 'bytes');
-    console.log('[Tailwind] Page ID:', pageId);
-
-    // Guardar CSS en archivo si hay pageId
-    if (pageId && css && css.length > 0) {
-      console.log('[Tailwind] Intentando guardar CSS en archivo...');
-      saveCssToFile(css, pageId);
-    } else {
-      console.log('[Tailwind] No se guarda el archivo: pageId=', pageId, 'css.length=', css ? css.length : 0);
-    }
-
-    return css;
+    return result.css;
   } catch (error: any) {
     console.error('[Tailwind] Error:', error.message);
     return '';
-  }
-};
-
-/**
- * Guarda el CSS compilado en un archivo público
- */
-const saveCssToFile = (css: string, pageId: string): void => {
-  try {
-    const publicCssDir = config.paths.css;
-
-    // Crear directorio si no existe
-    if (!fs.existsSync(publicCssDir)) {
-      fs.mkdirSync(publicCssDir, { recursive: true });
-    }
-
-    // Nombre del archivo: Si ya empieza con 'master-' o similar, lo usamos tal cual
-    let filename = `page-${pageId}.css`;
-    if (pageId.startsWith('section-')) {
-      filename = `${pageId}.css`;
-    }
-    
-    const filePath = path.join(publicCssDir, filename);
-
-    // Escribir archivo
-    fs.writeFileSync(filePath, css, 'utf8');
-
-    console.log(`[Tailwind] CSS guardado en: ${filePath}`);
-  } catch (error: any) {
-    console.error('[Tailwind] Error guardando archivo CSS:', error.message);
   }
 };

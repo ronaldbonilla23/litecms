@@ -22,6 +22,7 @@ interface SitemapUrlEntry {
 const getPublishedPages = async (): Promise<SitemapUrlEntry[]> => {
   const pages = await db('pages')
     .where({ status: 'published' })
+    .whereNot({ slug: '/404' }) // la página de error no se indexa
     .select('slug', 'updated_at')
     .orderBy('updated_at', 'desc');
 

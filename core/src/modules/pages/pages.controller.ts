@@ -3,40 +3,9 @@ import db from '../../database';
 import { AuthRequest } from '../auth/auth.middleware';
 import { PageSchema, PageUpdateSchema } from '../../../../shared/types';
 import { ZodError } from 'zod';
-import { compileTailwindCSS } from '../../services/tailwind.service';
+import { buildPageLayoutHtml, compilePageCss } from '../render/css.service';
+import { recordSlugChange } from '../redirects/redirects.service';
 import { config } from '../../config';
-
-export const recompilePageMasterCss = async (pageId: number): Promise<string> => {
-    const page = await db('pages').where({ id: pageId }).first();
-    if (!page) return '';
-
-    let headerHtml = '';
-    let footerHtml = '';
-
-    if (page.header_id) {
-        const header = await db('templates').where({ id: page.header_id }).first();
-        if (header) headerHtml = header.content;
-    }
-    if (page.footer_id) {
-        const footer = await db('templates').where({ id: page.footer_id }).first();
-        if (footer) footerHtml = footer.content;
-    }
-
-    const fullHtml = `
-        ${headerHtml}
-        ${page.content || ''}
-        ${footerHtml}
-    `;
-
-    const themeSettings = await db('theme_settings').first();
-    const compiledCss = await compileTailwindCSS(fullHtml, themeSettings || {}, `master-${page.id}`);
-
-    if (compiledCss && compiledCss.length > 0) {
-        await db('pages').where({ id: pageId }).update({ compiled_css: compiledCss });
-    }
-
-    return compiledCss;
-};
 
 export const createPage = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -70,7 +39,7 @@ export const createPage = async (req: AuthRequest, res: Response, next: NextFunc
         });
 
         // Compilar y guardar CSS Maestro combinado
-        await recompilePageMasterCss(Number(id));
+        await compilePageCss(Number(id));
 
         res.status(201).json({ message: 'Página creada', id });
     } catch (error: any) {
@@ -109,30 +78,13 @@ export const getPageBySlug = async (req: AuthRequest, res: Response, next: NextF
             page.fields = JSON.parse(page.fields);
         }
 
-        // 1. Obtener los Templates (Header y Footer)
-        let headerHtml = '';
-        let footerHtml = '';
-
-        if (page.header_id) {
-            const header = await db('templates').where({ id: page.header_id }).first();
-            if (header) headerHtml = header.content;
-        }
-        if (page.footer_id) {
-            const footer = await db('templates').where({ id: page.footer_id }).first();
-            if (footer) footerHtml = footer.content;
-        }
-
-        // 2. Unificar todo el HTML
-        const fullHtml = `
-            ${headerHtml}
-            ${page.content || ''}
-            ${footerHtml}
-        `;
+        // 1-2. HTML unificado: header + contenido + footer
+        const fullHtml = await buildPageLayoutHtml(page);
 
         // 3. Obtener o compilar el CSS Maestro precompilado
         let compiledCss = page.compiled_css;
         if (!compiledCss) {
-            compiledCss = await recompilePageMasterCss(page.id);
+            compiledCss = await compilePageCss(page.id);
         }
 
         // 4. Obtener OG image URL si existe
@@ -202,6 +154,7 @@ export const updatePage = async (req: AuthRequest, res: Response, next: NextFunc
 
         if (content !== undefined) updateData.content = content;
 
+        const previous = await db('pages').where({ id }).first('slug');
         const updatedCount = await db('pages').where({ id }).update(updateData);
 
         if (updatedCount === 0) {
@@ -211,7 +164,12 @@ export const updatePage = async (req: AuthRequest, res: Response, next: NextFunc
 
         // Compilar y guardar CSS Maestro si cambió el contenido, header, footer
         if (content !== undefined || header_id !== undefined || footer_id !== undefined) {
-            await recompilePageMasterCss(Number(id));
+            await compilePageCss(Number(id));
+        }
+
+        // Si cambió la URL, la anterior redirige (301) a la nueva para no perder SEO
+        if (previous && slug !== undefined) {
+            await recordSlugChange(previous.slug, slug);
         }
 
         res.json({ message: 'Página actualizada con éxito' });

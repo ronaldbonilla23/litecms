@@ -42,7 +42,7 @@ const migrationSource: Knex.MigrationSource<string> = {
             .sort();
     },
     getMigrationName: (file) => file.replace(/\.js$/, '.ts'),
-    getMigration: async (file) => require(path.join(config.paths.migrations, file)),
+    getMigration: async (file) => import(path.join(config.paths.migrations, file)),
 };
 
 /**

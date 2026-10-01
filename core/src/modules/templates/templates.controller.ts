@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import db from '../../database';
 import { AuthRequest } from '../auth/auth.middleware';
-import { compileTailwindCSS } from '../../services/tailwind.service';
+import { invalidateCssForTemplate } from '../render/css.service';
 
 export const createTemplate = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -12,25 +12,18 @@ export const createTemplate = async (req: AuthRequest, res: Response, next: Next
             return;
         }
 
-        // Obtener theme settings y compilar CSS
-        const themeSettings = await db('theme_settings').first();
-
-        // Insertar PRIMERO para obtener el ID
-        const [id] = await db('templates').insert({
-            id: crypto.randomUUID(),
+        // El UUID se genera aquí: en SQLite el insert devuelve el rowid, no la clave primaria
+        const id = crypto.randomUUID();
+        await db('templates').insert({
+            id,
             name,
             type,
             content: typeof content === 'string' ? content : JSON.stringify(content),
             is_active: is_active ?? true
         });
 
-        // Compilar CSS y guardar en archivo DESPUÉS de tener el ID
-        const compiledCss = await compileTailwindCSS(content, themeSettings || {}, `template-${id}`);
-
-        // Actualizar la plantilla con el CSS compilado
-        if (compiledCss && compiledCss.length > 0) {
-            await db('templates').where({ id }).update({ compiled_css: compiledCss });
-        }
+        // Las páginas y posts que usan plantillas activas recompilan su CSS al siguiente render
+        await invalidateCssForTemplate(id);
 
         res.status(201).json({ message: 'Plantilla creada', id });
     } catch (error: any) {
@@ -94,12 +87,8 @@ export const updateTemplate = async (req: AuthRequest, res: Response, next: Next
         if (type !== undefined) updateData.type = type;
         if (is_active !== undefined) updateData.is_active = is_active;
 
-        // Compilar CSS si el contenido cambió
         if (content !== undefined) {
             updateData.content = typeof content === 'string' ? content : JSON.stringify(content);
-            const themeSettings = await db('theme_settings').first();
-            const compiledCss = await compileTailwindCSS(content, themeSettings || {}, `template-${id}`);
-            updateData.compiled_css = compiledCss;
         }
 
         const updatedCount = await db('templates').where({ id }).update(updateData);
@@ -108,6 +97,9 @@ export const updateTemplate = async (req: AuthRequest, res: Response, next: Next
             res.status(404).json({ error: 'La plantilla solicitada no existe o no se pudo actualizar' });
             return;
         }
+
+        // El HTML de la plantilla forma parte de las páginas/posts: su CSS debe recompilarse
+        await invalidateCssForTemplate(String(id));
 
         res.json({ message: 'Plantilla actualizada con éxito' });
     } catch (error) {
@@ -120,6 +112,7 @@ export const deleteTemplate = async (req: AuthRequest, res: Response, next: Next
         const { id } = req.params;
 
         const deletedCount = await db('templates').where({ id }).delete();
+        if (deletedCount > 0) await invalidateCssForTemplate(String(id));
 
         if (deletedCount === 0) {
             res.status(404).json({ error: 'La plantilla solicitada no existe' });
@@ -147,6 +140,8 @@ export const toggleTemplateActive = async (req: AuthRequest, res: Response, next
             is_active: !template.is_active,
             updated_at: db.fn.now()
         });
+
+        await invalidateCssForTemplate(String(id));
 
         res.json({ message: 'Estado de la plantilla actualizado', is_active: !template.is_active });
     } catch (error) {

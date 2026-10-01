@@ -2,7 +2,9 @@ import db from '../../database';
 import { PageSchema } from '../../../../shared/types';
 import type { z } from 'zod';
 import Handlebars from 'handlebars';
-import { compileTailwindCSS } from '../../services/tailwind.service';
+import { compilePostCss } from '../render/css.service';
+import { recordSlugChange } from '../redirects/redirects.service';
+import { sanitizeRichText } from '../../services/sanitize.service';
 import { generateStructuredData, StructuredDataPost } from '../../services/structuredData.service';
 import type { Knex } from 'knex';
 import { config } from '../../config';
@@ -87,9 +89,13 @@ export interface RenderedPost {
  * Genera un slug único a partir de un título
  * Si el slug ya existe, agrega un sufijo numérico
  */
-const generateUniqueSlug = async (title: string, postId?: number): Promise<string> => {
-  // Generar slug base
+// Recibe la conexión (transacción) en uso: SQLite tiene una sola conexión y consultar con
+// `db` dentro de una transacción abierta se queda esperando para siempre (deadlock).
+const generateUniqueSlug = async (title: string, conn: Knex | Knex.Transaction, postId?: number): Promise<string> => {
+  // Generar slug base ("Artículo Ñandú" → "articulo-nandu")
   const baseSlug = title
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
@@ -100,7 +106,7 @@ const generateUniqueSlug = async (title: string, postId?: number): Promise<strin
 
   // Verificar unicidad
   while (true) {
-    const query = db('posts').where({ slug });
+    const query = conn('posts').where({ slug });
 
     // Si estamos actualizando, excluir el post actual
     if (postId) {
@@ -349,9 +355,8 @@ export const getBySlug = async (slug: string): Promise<RenderedPost | null> => {
     ${footerHtml}
   `;
 
-  // 4. Compilar CSS Maestro del Post
-  const themeSettings = await db('theme_settings').first();
-  const compiledCss = await compileTailwindCSS(fullHtml, themeSettings || {}, `master-post-${post.id}`);
+  // 4. CSS Maestro del Post: cacheado en la BD, se compila solo si falta
+  const compiledCss = post.compiled_css || await compilePostCss(post.id, fullHtml);
 
   // 5. Generar datos estructurados Schema.org
   const structuredDataPost: StructuredDataPost = {
@@ -449,14 +454,14 @@ export const create = async (data: CreatePostDTO, authorId: number): Promise<{ i
 
     // Generar slug único
     const finalSlug = providedSlug
-      ? await generateUniqueSlug(providedSlug)
-      : await generateUniqueSlug(title);
+      ? await generateUniqueSlug(providedSlug, trx)
+      : await generateUniqueSlug(title, trx);
 
     // Insertar post
     const [id] = await trx('posts').insert({
       title,
       slug: finalSlug,
-      content,
+      content: sanitizeRichText(content || ''),
       author_id: authorId,
       status,
       published_at: published_at || null,
@@ -498,7 +503,9 @@ export const create = async (data: CreatePostDTO, authorId: number): Promise<{ i
  * ============================================================================
  */
 export const update = async (id: number, data: UpdatePostDTO): Promise<void> => {
-  return db.transaction(async (trx: Knex.Transaction) => {
+  const previous = await db('posts').where({ id }).first('slug');
+
+  await db.transaction(async (trx: Knex.Transaction) => {
     const {
       title,
       slug: providedSlug,
@@ -515,15 +522,17 @@ export const update = async (id: number, data: UpdatePostDTO): Promise<void> => 
 
     // Preparar datos de actualización
     const updateData: any = {
-      updated_at: trx.fn.now()
+      updated_at: trx.fn.now(),
+      // El título, contenido o layout pueden cambiar: el CSS se recompila en el siguiente render
+      compiled_css: null
     };
 
     if (title !== undefined) updateData.title = title;
     if (providedSlug !== undefined) {
       // Verificar unicidad del slug (excluyendo este post)
-      updateData.slug = await generateUniqueSlug(providedSlug, id);
+      updateData.slug = await generateUniqueSlug(providedSlug, trx, id);
     }
-    if (content !== undefined) updateData.content = content;
+    if (content !== undefined) updateData.content = sanitizeRichText(content ?? '');
     if (status !== undefined) updateData.status = status;
     if (published_at !== undefined) updateData.published_at = published_at;
     if (scheduled_for !== undefined) updateData.scheduled_for = scheduled_for;
@@ -561,6 +570,13 @@ export const update = async (id: number, data: UpdatePostDTO): Promise<void> => 
       }
     }
   });
+
+  // Si cambió el slug, la URL anterior redirige (301) a la nueva.
+  // Fuera de la transacción: SQLite usa una sola conexión.
+  const updated = await db('posts').where({ id }).first('slug');
+  if (previous && updated) {
+    await recordSlugChange(`/blog/${previous.slug}`, `/blog/${updated.slug}`);
+  }
 };
 
 /**
