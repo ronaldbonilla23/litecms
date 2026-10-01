@@ -1,0 +1,18 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "npm ci --prefix core && npm ci --prefix admin",
+  "buildCommand": "npm run build && mkdir -p .vercel-static",
+  "outputDirectory": ".vercel-static",
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 30,
+      "includeFiles": "{core/dist/**,core/package.json,shared/**,admin/dist/**,plugins/**,themes/**}"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api"
+    }
+  ]
+}

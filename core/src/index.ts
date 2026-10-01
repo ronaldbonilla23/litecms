@@ -25,11 +25,19 @@ import pluginsAdminRoutes from './plugins/plugins.routes';
 import themesRoutes from './themes/themes.routes';
 import { initPlugins, pluginRoutesDispatcher } from './plugins/registry';
 import { fireAction } from './plugins/hooks';
+import { getStorage } from './storage';
 import renderRoutes from './modules/render/render.routes';
 import { clearRenderCache } from './modules/render/render.service';
 
 
 const app = express();
+
+// En serverless no hay arranque previo: cada instancia se inicializa con su primera petición
+if (process.env.VERCEL) {
+    app.use((req: Request, res: Response, next: NextFunction) => {
+        ready().then(() => next(), next);
+    });
+}
 
 // Detrás de un proxy (cPanel, Nginx, Vercel) la IP real llega en X-Forwarded-For
 if (process.env.TRUST_PROXY) {
@@ -118,7 +126,21 @@ app.use('/api/plugins/:name',
     pluginRoutesDispatcher);
 
 // Servir archivos estáticos de forma pública
-app.use('/uploads', express.static(config.paths.uploads));
+// Con almacenamiento local se sirven desde disco; con S3/Vercel Blob se redirige al CDN del proveedor
+// (los nombres incluyen un timestamp y nunca cambian: la redirección se cachea un año)
+const uploadsStorage = getStorage();
+if (uploadsStorage.driver === 'local') {
+    app.use('/uploads', express.static(config.paths.uploads, { maxAge: '365d', immutable: true }));
+} else {
+    app.get(/^\/uploads\/([^/]+)$/, (req: Request, res: Response) => {
+        try {
+            res.set('Cache-Control', 'public, max-age=31536000, immutable');
+            res.redirect(301, uploadsStorage.publicUrl(String(req.params[0]))!);
+        } catch {
+            res.status(404).end();
+        }
+    });
+}
 
 // Archivos estáticos opcionales (favicon.ico, verificaciones de Google, etc.)
 app.use(express.static(config.paths.publicDir, { index: false }));
@@ -165,23 +187,40 @@ app.use((err: Error | any, req: Request, res: Response, next: NextFunction) => {
 });
 
 
-if (process.env.NODE_ENV !== 'test') {
-    const start = async () => {
-        await checkDatabaseConnection(); // Verificamos la DB al arrancar
+/**
+ * Inicialización (una sola vez): verifica la BD, aplica migraciones y carga plugins.
+ * - Servidor normal (VPS, Docker, cPanel): se ejecuta antes de escuchar el puerto.
+ * - Serverless (Vercel): no hay listen; se ejecuta con la primera petición.
+ */
+let readyPromise: Promise<void> | null = null;
+export const ready = (): Promise<void> => {
+    readyPromise ??= (async () => {
+        await checkDatabaseConnection();
         await runMigrations(); // Instalación nueva o actualización: deja el esquema al día
         await initPlugins(); // Carga los plugins activos
-        app.listen(config.port, () => {
-            console.log(`🚀 Servidor LiteCMS corriendo en http://localhost:${config.port}`);
-            if (fs.existsSync(adminIndex)) {
-                console.log(`🛠️  Admin disponible en http://localhost:${config.port}/admin`);
-            }
-        });
-    };
-
-    start().catch((error) => {
-        console.error('[LiteCMS] No se pudo iniciar el servidor:', error);
-        process.exit(1);
+    })().catch((error) => {
+        readyPromise = null; // permitir reintentar en la siguiente petición
+        throw error;
     });
+    return readyPromise;
+};
+
+const isServerless = Boolean(process.env.VERCEL);
+
+if (process.env.NODE_ENV !== 'test' && !isServerless) {
+    ready()
+        .then(() => {
+            app.listen(config.port, () => {
+                console.log(`🚀 Servidor LiteCMS corriendo en http://localhost:${config.port}`);
+                if (fs.existsSync(adminIndex)) {
+                    console.log(`🛠️  Admin disponible en http://localhost:${config.port}/admin`);
+                }
+            });
+        })
+        .catch((error) => {
+            console.error('[LiteCMS] No se pudo iniciar el servidor:', error);
+            process.exit(1);
+        });
 }
 
 export default app;

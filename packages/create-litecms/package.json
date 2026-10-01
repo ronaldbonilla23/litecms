@@ -1,0 +1,15 @@
+{
+  "name": "create-litecms",
+  "version": "0.5.0",
+  "description": "Crea un sitio nuevo con LiteCMS: npx create-litecms mi-sitio",
+  "license": "MIT",
+  "bin": {
+    "create-litecms": "index.js"
+  },
+  "files": [
+    "index.js"
+  ],
+  "engines": {
+    "node": ">=20.11"
+  }
+}

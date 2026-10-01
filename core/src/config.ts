@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import dotenv from 'dotenv';
 
 /**
  * Configuración central de LiteCMS.
@@ -24,6 +25,10 @@ const findProjectRoot = (): string => {
 };
 
 const ROOT = findProjectRoot();
+
+// Variables de entorno: .env del directorio actual y core/.env (las ya definidas no se pisan).
+// Así `npm start` funciona igual desde la raíz del proyecto que desde /core.
+dotenv.config({ path: [path.join(process.cwd(), '.env'), path.join(ROOT, 'core', '.env')], quiet: true });
 
 const parseList = (value: string | undefined, fallback: string[]): string[] =>
     value ? value.split(',').map((item) => item.trim()).filter(Boolean) : fallback;

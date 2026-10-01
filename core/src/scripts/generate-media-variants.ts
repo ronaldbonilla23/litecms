@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import db, { runMigrations } from '../database';
 import { generateImageVariants, parseVariants } from '../services/images.service';
+import { getStorage } from '../storage';
 
 /**
  * Genera las variantes WebP (srcset) de las imágenes subidas antes de que existieran.
@@ -17,7 +18,7 @@ const main = async () => {
     for (const item of media) {
         if (!regenerateAll && parseVariants(item.variants).length > 0) continue;
         try {
-            const image = await generateImageVariants(item.filename);
+            const image = await generateImageVariants(item.filename, await getStorage().get(item.filename));
             await db('media').where({ id: item.id }).update({
                 width: image.width,
                 height: image.height,

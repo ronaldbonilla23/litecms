@@ -1,0 +1,18 @@
+{
+  "name": "litecms",
+  "version": "0.5.0",
+  "private": true,
+  "description": "CMS ligero en TypeScript: render en servidor, tipos de contenido, plugins y temas. SEO y AEO de serie.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "build": "npm run build --prefix admin && npm run build --prefix core",
+    "start": "node core/dist/core/src/index.js",
+    "dev": "node scripts/dev.mjs",
+    "test": "npm test --prefix core -- --run",
+    "package": "node scripts/package.mjs"
+  }
+}

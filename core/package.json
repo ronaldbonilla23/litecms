@@ -8,7 +8,8 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/core/src/index.js",
     "test": "vitest",
-    "media:variants": "NODE_PATH=./node_modules ts-node src/scripts/generate-media-variants.ts"
+    "media:variants": "NODE_PATH=./node_modules ts-node src/scripts/generate-media-variants.ts",
+    "admin": "NODE_PATH=./node_modules ts-node src/scripts/create-admin.ts"
   },
   "keywords": [],
   "author": "",
@@ -30,7 +31,10 @@
     "vitest": "^4.1.1"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1144.0",
+    "@libsql/sqlite3": "^0.3.1",
     "@tailwindcss/typography": "^0.5.19",
+    "@vercel/blob": "^2.8.0",
     "autoprefixer": "^10.4.27",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",

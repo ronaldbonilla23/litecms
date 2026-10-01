@@ -1,7 +1,6 @@
-import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
-import { config } from '../config';
+import { getStorage } from '../storage';
 
 /**
  * ============================================================================
@@ -10,6 +9,7 @@ import { config } from '../config';
  * Al subir una imagen se generan copias WebP en varios anchos. El render
  * público las usa para añadir srcset/sizes a los <img>, de modo que cada
  * dispositivo descarga solo el tamaño que necesita (Core Web Vitals / SEO).
+ * Los archivos se guardan con el adaptador de almacenamiento configurado.
  * ============================================================================
  */
 
@@ -30,9 +30,9 @@ export interface ProcessedImage {
 const variantFilename = (filename: string, width: number): string =>
     `${path.parse(filename).name}-${width}w.webp`;
 
-export const generateImageVariants = async (filename: string): Promise<ProcessedImage> => {
-    const sourcePath = path.join(config.paths.uploads, path.basename(filename));
-    const metadata = await sharp(sourcePath).metadata();
+/** Genera y guarda las variantes WebP de una imagen a partir de su contenido */
+export const generateImageVariants = async (filename: string, source: Buffer): Promise<ProcessedImage> => {
+    const metadata = await sharp(source).metadata();
     const originalWidth = metadata.width ?? null;
 
     // Solo anchos menores que el original (no se agrandan imágenes) + una versión WebP a tamaño original
@@ -40,14 +40,16 @@ export const generateImageVariants = async (filename: string): Promise<Processed
         ? [...VARIANT_WIDTHS.filter((width) => width < originalWidth), originalWidth]
         : [];
 
+    const storage = getStorage();
     const variants: ImageVariant[] = [];
     for (const width of [...new Set(widths)]) {
         const outputName = variantFilename(filename, width);
-        await sharp(sourcePath)
+        const output = await sharp(source)
             .rotate() // respeta la orientación EXIF de fotos de móvil
             .resize({ width, withoutEnlargement: true })
             .webp({ quality: 80 })
-            .toFile(path.join(config.paths.uploads, outputName));
+            .toBuffer();
+        await storage.put(outputName, output, 'image/webp');
         variants.push({ width, filename: outputName });
     }
 
@@ -55,11 +57,8 @@ export const generateImageVariants = async (filename: string): Promise<Processed
 };
 
 export const deleteImageVariants = async (variants: ImageVariant[]): Promise<void> => {
-    await Promise.all(
-        variants.map((variant) =>
-            fs.promises.unlink(path.join(config.paths.uploads, path.basename(variant.filename))).catch(() => undefined)
-        )
-    );
+    const storage = getStorage();
+    await Promise.all(variants.map((variant) => storage.delete(path.basename(variant.filename)).catch(() => undefined)));
 };
 
 export const parseVariants = (value: unknown): ImageVariant[] => {

@@ -1,9 +1,9 @@
 import type { Request, Response, NextFunction } from 'express';
 import db from '../../database';
-import fs from 'fs';
 import path from 'path';
 import { MediaSchema } from '../../../../shared/types';
-import { config } from '../../config';
+import { getStorage } from '../../storage';
+import { buildUploadFilename } from './media.multer';
 import { generateImageVariants, deleteImageVariants, parseVariants, type ImageVariant } from '../../services/images.service';
 
 export const uploadFile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -15,13 +15,16 @@ export const uploadFile = async (req: Request, res: Response, next: NextFunction
             return;
         }
 
-        const { filename, originalname, mimetype, size } = req.file;
+        const { originalname, mimetype, size, buffer } = req.file;
+        const filename = buildUploadFilename(originalname, mimetype);
         const filePath = `/uploads/${filename}`;
+
+        await getStorage().put(filename, buffer, mimetype);
 
         // Variantes WebP para srcset. Si falla (imagen corrupta), la subida sigue siendo válida.
         let image = { width: null as number | null, height: null as number | null, variants: [] as ImageVariant[] };
         try {
-            image = await generateImageVariants(filename);
+            image = await generateImageVariants(filename, buffer);
         } catch (imageError: any) {
             console.warn(`[Media] No se pudieron generar variantes de ${filename}:`, imageError.message);
         }
@@ -65,14 +68,11 @@ export const deleteMedia = async (req: Request, res: Response, next: NextFunctio
             return;
         }
 
-        // Eliminar del disco (basename evita rutas fuera de /uploads)
-        const filePhysicalPath = path.join(config.paths.uploads, path.basename(mediaItem.filename));
-
+        // Eliminar del almacenamiento (si ya no existe, se borra igualmente el registro)
         try {
-            await fs.promises.unlink(filePhysicalPath);
-        } catch (fsError) {
-            // Si el archivo físico no existe, lo ignoramos para borrar de todas formas el registro
-            console.warn(`El archivo físico ${filePhysicalPath} no existía o no se pudo borrar.`);
+            await getStorage().delete(path.basename(mediaItem.filename));
+        } catch (storageError: any) {
+            console.warn(`[Media] No se pudo borrar ${mediaItem.filename}:`, storageError.message);
         }
 
         await deleteImageVariants(parseVariants(mediaItem.variants));

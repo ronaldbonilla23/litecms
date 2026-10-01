@@ -48,3 +48,9 @@ yarn-error.log*
 # ========================
 .DS_Store
 Thumbs.db
+# ========================
+# Paquetes de distribución (npm run package)
+# ========================
+release/
+.vercel-static/
+.vercel/
