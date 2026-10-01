@@ -21,6 +21,10 @@ import categoriesRoutes from './modules/categories/categories.routes';
 import tagsRoutes from './modules/tags/tags.routes';
 import contentTypesRoutes from './modules/contentTypes/contentTypes.routes';
 import entriesRoutes from './modules/entries/entries.routes';
+import pluginsAdminRoutes from './plugins/plugins.routes';
+import themesRoutes from './themes/themes.routes';
+import { initPlugins, pluginRoutesDispatcher } from './plugins/registry';
+import { fireAction } from './plugins/hooks';
 import renderRoutes from './modules/render/render.routes';
 import { clearRenderCache } from './modules/render/render.service';
 
@@ -39,6 +43,9 @@ app.use(helmet({
     contentSecurityPolicy: false,
     // Permite que el frontend en otro puerto/dominio cargue /uploads y /css
     crossOriginResourcePolicy: { policy: 'cross-origin' },
+    // Valor por defecto de los navegadores: URL completa dentro del sitio (formularios
+    // que vuelven a su página), solo el dominio hacia otros sitios
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 }));
 
 // CORS: orígenes permitidos configurables con CORS_ORIGINS (separados por coma)
@@ -63,7 +70,10 @@ const authLimiter = rateLimit({
 app.use('/api', (req: Request, res: Response, next: NextFunction) => {
     if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
         res.on('finish', () => {
-            if (res.statusCode < 400) clearRenderCache();
+            if (res.statusCode < 400) {
+                clearRenderCache();
+                fireAction('content.changed', { method: req.method, path: req.originalUrl });
+            }
         });
     }
     next();
@@ -90,6 +100,22 @@ app.use('/api/categories', categoriesRoutes);
 app.use('/api/tags', tagsRoutes);
 app.use('/api/content-types', contentTypesRoutes);
 app.use('/api/entries', entriesRoutes);
+app.use('/api/extensions/plugins', pluginsAdminRoutes);
+app.use('/api/extensions/themes', themesRoutes);
+
+// Rutas que registran los plugins: /api/plugins/<nombre>/...
+// Aceptan formularios HTML clásicos (sin JavaScript) y limitan los envíos públicos.
+const pluginPostLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 30,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: { error: 'Demasiados envíos. Intenta de nuevo en unos minutos.' },
+});
+app.use('/api/plugins/:name',
+    express.urlencoded({ extended: false, limit: '100kb' }),
+    (req: Request, res: Response, next: NextFunction) => (req.method === 'POST' ? pluginPostLimiter(req, res, next) : next()),
+    pluginRoutesDispatcher);
 
 // Servir archivos estáticos de forma pública
 app.use('/uploads', express.static(config.paths.uploads));
@@ -143,6 +169,7 @@ if (process.env.NODE_ENV !== 'test') {
     const start = async () => {
         await checkDatabaseConnection(); // Verificamos la DB al arrancar
         await runMigrations(); // Instalación nueva o actualización: deja el esquema al día
+        await initPlugins(); // Carga los plugins activos
         app.listen(config.port, () => {
             console.log(`🚀 Servidor LiteCMS corriendo en http://localhost:${config.port}`);
             if (fs.existsSync(adminIndex)) {

@@ -39,6 +39,9 @@ export interface DocumentInput {
     cssHref?: string | null;
     jsonLd?: Array<Record<string, any>>;
     body: string;
+    // HTML extra aportado por plugins (filtros render.head / render.bodyEnd)
+    extraHead?: string[];
+    bodyEnd?: string[];
 }
 
 const HTML_ESCAPES: Record<string, string> = {
@@ -81,7 +84,7 @@ export const toMetaDescription = (text: string, maxLength = 160): string => {
 const meta = (attr: 'name' | 'property', key: string, value?: string | null): string =>
     value ? `<meta ${attr}="${key}" content="${escapeHtml(value)}">` : '';
 
-export const buildDocument = ({ seo, theme, cssHref, jsonLd = [], body }: DocumentInput): string => {
+export const buildDocument = ({ seo, theme, cssHref, jsonLd = [], body, extraHead = [], bodyEnd = [] }: DocumentInput): string => {
     const indexable = seo.indexable && config.indexable;
     const imageUrl = seo.imageUrl ? absoluteUrl(seo.imageUrl) : null;
 
@@ -133,6 +136,7 @@ export const buildDocument = ({ seo, theme, cssHref, jsonLd = [], body }: Docume
         `<style>body{${baseStyle}}</style>`,
         ...jsonLd.map((data) => `<script type="application/ld+json">${serializeJsonLd(data)}</script>`),
         '<meta name="generator" content="LiteCMS">',
+        ...extraHead,
     ].filter(Boolean).join('\n    ');
 
     return `<!doctype html>
@@ -142,6 +146,7 @@ export const buildDocument = ({ seo, theme, cssHref, jsonLd = [], body }: Docume
 </head>
 <body>
 ${body}
+${bodyEnd.join('\n')}
 </body>
 </html>`;
 };

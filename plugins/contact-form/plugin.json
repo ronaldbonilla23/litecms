@@ -1,0 +1,15 @@
+{
+  "name": "contact-form",
+  "title": "Formulario de contacto",
+  "version": "1.0.0",
+  "description": "Formulario sin JavaScript con protección anti-spam. Escribe {{{contactForm}}} en cualquier página o plantilla. Guarda los mensajes y, si configuras un webhook (Zapier, Make, n8n), los reenvía para recibirlos por email.",
+  "author": "LiteCMS",
+  "settings": [
+    { "key": "button_label", "label": "Texto del botón", "type": "text", "help": "Por defecto: Enviar mensaje" },
+    { "key": "success_message", "label": "Mensaje de confirmación", "type": "text", "help": "Por defecto: ¡Gracias! Te responderemos pronto." },
+    { "key": "webhook_url", "label": "Webhook (opcional)", "type": "url", "help": "Cada mensaje se envía como JSON (POST) a esta URL" }
+  ],
+  "data": [
+    { "collection": "messages", "title": "Mensajes recibidos", "columns": ["name", "email", "message", "page"] }
+  ]
+}

@@ -64,6 +64,16 @@ export function Sidebar() {
             <i className="fi fi-rr-layers text-xl mt-1"></i>
           </NavLink>
 
+          <NavLink
+            to="/dashboard/extensions"
+            title="Extensiones (plugins y temas)"
+            className={({ isActive }) =>
+              `w-10 h-10 flex items-center justify-center rounded-full transition-all ${isActive ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-white hover:text-primary hover:bg-white/5'}`
+            }
+          >
+            <i className="fi fi-rr-puzzle-alt text-xl mt-1"></i>
+          </NavLink>
+
           {/* Blog Section */}
           <div className="w-10 h-px bg-white/10 my-2"></div>
 
