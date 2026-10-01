@@ -19,6 +19,8 @@ import templatesRoutes from './modules/templates/templates.routes';
 import postsRoutes from './modules/posts/posts.routes';
 import categoriesRoutes from './modules/categories/categories.routes';
 import tagsRoutes from './modules/tags/tags.routes';
+import contentTypesRoutes from './modules/contentTypes/contentTypes.routes';
+import entriesRoutes from './modules/entries/entries.routes';
 import renderRoutes from './modules/render/render.routes';
 import { clearRenderCache } from './modules/render/render.service';
 
@@ -86,6 +88,8 @@ app.use('/api/templates', templatesRoutes);
 app.use('/api/posts', postsRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/tags', tagsRoutes);
+app.use('/api/content-types', contentTypesRoutes);
+app.use('/api/entries', entriesRoutes);
 
 // Servir archivos estáticos de forma pública
 app.use('/uploads', express.static(config.paths.uploads));

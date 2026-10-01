@@ -8,6 +8,10 @@ const CORE_URL = 'http://localhost:3000'
 export default defineConfig({
   base: '/admin/',
   plugins: [react()],
+  resolve: {
+    // shared/ no tiene node_modules propio: sus dependencias se resuelven desde el admin
+    dedupe: ['zod', 'react', 'react-dom'],
+  },
   server: {
     // En desarrollo, Vite reenvía al servidor core todo lo que no es el admin
     proxy: {

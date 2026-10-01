@@ -56,7 +56,8 @@ export const updateThemeSettings = async (req: Request, res: Response) => {
     }
 };
 
-const getDefaultSettings = () => ({
+// Valores por defecto del Design System (también los usa el render si aún no hay configuración)
+export const getDefaultSettings = () => ({
     // Colores Globales
     primary_color: '#C2F86C',
     secondary_color: '#3B82F6',

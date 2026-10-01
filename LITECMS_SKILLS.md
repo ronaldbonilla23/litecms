@@ -59,6 +59,14 @@ GET/POST/PUT/DELETE /api/pages (CRUD de contenidos)
 - SEO/AEO: `/robots.txt`, `/llms.txt`, `/sitemap.xml`; redirecciones 301 automáticas al cambiar un slug; `<img>` de /uploads reciben srcset WebP.
 - El contenido de posts se sanitiza al guardar (`services/sanitize.service.ts`); plantillas y páginas son HTML de confianza del admin.
 
+🧩 Tipos de contenido (campos dinámicos):
+- Definición compartida en `shared/contentTypes.ts`: tipos de campo, `ContentTypeSchema`, `EntrySchema` y `buildEntryDataSchema(fields)`. La API (core) y el formulario del admin validan con el mismo schema; no duplicar validaciones.
+- Tablas `content_types` (campos en JSON) y `entries` (valores en `data` JSON). API: `/api/content-types` y `/api/entries?type=slug` (requieren sesión).
+- URLs públicas: `url_prefix` del tipo → archivo en `/prefijo` y entradas en `/prefijo/:slug`. Una página con la misma URL tiene prioridad.
+- Plantillas de tipo `single` (`{{entry.title}}`, `{{entry.fields.clave}}`, imágenes como `{{entry.fields.foto.url}}`) y `archive` (`{{#each entries}}`). Sin plantilla se usa una por defecto.
+- Helpers Handlebars: `{{#each (query "slug-del-tipo" limit=3)}}` en cualquier plantilla o página, `{{formatDate fecha "long"}}`, `(eq a b)`. `query` se precarga antes de renderizar (Handlebars no admite helpers asíncronos).
+- Páginas y posts siguen siendo tipos integrados con tablas propias.
+
 🚀 3. Flujos de Trabajo (Workflow Skills)
 Reglas para la generación de nuevo código:
 

@@ -25,9 +25,9 @@ router.get('/llms.txt', async (req: Request, res: Response, next: NextFunction) 
 router.get('/sitemap.xml', getSitemap);
 
 // ----------------------------------------------------------------------------
-// CSS compilado de cada página/post: /css/page-6.css?v=<hash>
+// CSS compilado de cada documento: /css/page-6.css?v=<hash> (page, post, entry, archive)
 // ----------------------------------------------------------------------------
-router.get(/^\/css\/(page|post)-(\d+)\.css$/, async (req: Request, res: Response, next: NextFunction) => {
+router.get(/^\/css\/(page|post|entry|archive)-(\d+)\.css$/, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const owner = req.params[0] as CssOwner;
         const id = Number(req.params[1]);

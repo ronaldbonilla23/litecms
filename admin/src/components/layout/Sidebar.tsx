@@ -1,6 +1,7 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 
 export function Sidebar() {
+  const location = useLocation();
   return (
     <div className="w-24 flex items-center justify-center p-4">
       <aside className="w-16 bg-[#141414] border border-white/10 rounded-full flex flex-col items-center py-4 shadow-xl fixed top-1/2 -translate-y-1/2">
@@ -49,6 +50,18 @@ export function Sidebar() {
             }
           >
             <i className="fi fi-rr-file-code text-xl mt-1"></i>
+          </NavLink>
+
+          {/* Tipos de contenido (activo también en /dashboard/content/*) */}
+          <NavLink
+            to="/dashboard/content-types"
+            title="Tipos de contenido"
+            className={({ isActive }) => {
+              const active = isActive || location.pathname.startsWith('/dashboard/content/');
+              return `w-10 h-10 flex items-center justify-center rounded-full transition-all ${active ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-white hover:text-primary hover:bg-white/5'}`;
+            }}
+          >
+            <i className="fi fi-rr-layers text-xl mt-1"></i>
           </NavLink>
 
           {/* Blog Section */}
