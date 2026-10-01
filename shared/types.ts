@@ -42,6 +42,14 @@ export interface Page {
     footer_id?: string | null;
     /** HTML content for the page */
     content?: string | null;
+    /** SEO: Meta title for search engines (max 200 chars) */
+    meta_title?: string | null;
+    /** SEO: Meta description for search engines */
+    meta_description?: string | null;
+    /** SEO: Canonical URL to prevent duplicate content */
+    canonical_url?: string | null;
+    /** SEO: Open Graph image ID (FK to media) */
+    og_image_id?: number | null;
     /** Date when the page was created */
     created_at: string;
     /** Date of the last update to the page */
@@ -86,6 +94,12 @@ export const UserSchema = z.object({
 
 export const LoginSchema = UserSchema.pick({ email: true, password: true });
 
+// Instalación inicial: el primer admin exige una contraseña más robusta
+export const InstallSchema = UserSchema.pick({ name: true, email: true }).extend({
+    password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
+});
+
+
 
 export const PageSchema = z.object({
     title: z.string().min(1, 'El título es obligatorio'),
@@ -96,7 +110,17 @@ export const PageSchema = z.object({
     header_id: z.string().optional().nullable(),
     footer_id: z.string().optional().nullable(),
     content: z.string().optional().nullable(),
+    meta_title: z.string().max(200).optional().nullable(),
+    meta_description: z.string().optional().nullable(),
+    canonical_url: z.string().max(500).optional().nullable(),
+    og_image_id: z.number().int().optional().nullable(),
 });
+
+// Para PUT: todos los campos opcionales y SIN default en status.
+// (En Zod 4, .partial() conserva el default y una edición sin status despublicaba la página.)
+export const PageUpdateSchema = PageSchema.extend({
+    status: z.enum(['draft', 'published']).optional(),
+}).partial();
 
 export const MediaSchema = z.object({
     alt_text: z.string().max(255).optional().nullable(),

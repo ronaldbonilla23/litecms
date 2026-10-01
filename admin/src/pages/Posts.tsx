@@ -12,8 +12,8 @@ interface Post {
   author_name: string;
   published_at: string;
   view_count: number;
-  categories?: string;
-  tags?: string;
+  categories?: Array<{ id: number; name: string; slug: string }>;
+  tags?: Array<{ id: number; name: string; slug: string; color: string }>;
 }
 
 export function Posts() {
@@ -133,9 +133,9 @@ export function Posts() {
                       <i className={`fi ${getStatusIcon(post.status)}`}></i>
                       {post.status}
                     </span>
-                    {post.categories && (
+                    {post.categories && post.categories.length > 0 && (
                       <span className="text-[10px] text-gray-500">
-                        {post.categories}
+                        {post.categories.map(c => c.name).join(', ')}
                       </span>
                     )}
                   </div>

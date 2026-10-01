@@ -2,8 +2,13 @@ import 'dotenv/config';
 import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import { checkDatabaseConnection } from './database';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import multer from 'multer';
+import fs from 'fs';
 import path from 'path';
+import { config } from './config';
+import { checkDatabaseConnection, runMigrations } from './database';
 import pageRoutes from './modules/pages/pages.routes';
 import installRoutes from './modules/install/install.routes';
 import authRoutes from './modules/auth/auth.routes';
@@ -14,19 +19,41 @@ import templatesRoutes from './modules/templates/templates.routes';
 import postsRoutes from './modules/posts/posts.routes';
 import categoriesRoutes from './modules/categories/categories.routes';
 import tagsRoutes from './modules/tags/tags.routes';
+import { getSitemap } from './controllers/sitemap.controller';
 
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+
+// Detrás de un proxy (cPanel, Nginx, Vercel) la IP real llega en X-Forwarded-For
+if (process.env.TRUST_PROXY) {
+    const hops = Number(process.env.TRUST_PROXY);
+    app.set('trust proxy', Number.isNaN(hops) ? true : hops);
+}
 
 // Middlewares globales
-// CORS: Permitir tanto el admin (5173) como el frontend público (5174)
+app.use(helmet({
+    // La CSP se definirá junto al render SSR del sitio público (M2)
+    contentSecurityPolicy: false,
+    // Permite que el frontend en otro puerto/dominio cargue /uploads y /css
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
+
+// CORS: orígenes permitidos configurables con CORS_ORIGINS (separados por coma)
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
+    origin: config.corsOrigins,
     methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
     credentials: true
 }));
-app.use(express.json()); // Permite a la API recibir payloads en formato JSON
+app.use(express.json({ limit: '5mb' })); // Permite a la API recibir payloads en formato JSON
+
+// Límite de intentos para rutas sensibles (fuerza bruta)
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 10,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: { error: 'Demasiados intentos. Intenta de nuevo en unos minutos.' },
+});
 
 // Ruta de diagnóstico (Health Check)
 app.get('/api/health', (req: Request, res: Response) => {
@@ -34,6 +61,9 @@ app.get('/api/health', (req: Request, res: Response) => {
 });
 
 
+// El límite aplica solo a los intentos (POST), no a consultas como /install/status
+app.post('/api/install', authLimiter);
+app.post('/api/auth/login', authLimiter);
 app.use('/api/install', installRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/pages', pageRoutes);
@@ -45,37 +75,65 @@ app.use('/api/posts', postsRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/tags', tagsRoutes);
 
+// Sitemap dinámico (ruta pública)
+app.get('/sitemap.xml', getSitemap);
+
 // Servir archivos estáticos de forma pública
-app.use('/uploads', express.static(path.join(__dirname, '../../content/uploads')));
+app.use('/uploads', express.static(config.paths.uploads));
 
 // Servir archivos CSS compilados y toda la carpeta public
-app.use('/css', express.static(path.join(__dirname, '../public', 'css')));
-app.use(express.static(path.join(__dirname, '../public')));
+app.use('/css', express.static(config.paths.css));
+app.use(express.static(config.paths.publicDir));
 
+// Panel de administración (build de /admin). Cualquier ruta /admin/* devuelve el index.html de la SPA.
+const adminIndex = path.join(config.paths.adminDist, 'index.html');
+if (fs.existsSync(adminIndex)) {
+    app.use('/admin', express.static(config.paths.adminDist, { index: false }));
+    app.get(/^\/admin(\/.*)?$/, (req: Request, res: Response) => {
+        res.sendFile(adminIndex);
+    });
+}
 
-// Ruta de prueba para forzar un error y validar nuestra arquitectura
-app.get('/api/error-test', (req: Request, res: Response, next: NextFunction) => {
-    const err = new Error('Este es un error de prueba simulado para LiteCMS');
-    next(err); // Pasamos el error al manejador global
-});
 
 // MANEJADOR GLOBAL DE ERRORES (Cumpliendo el Technical Brief)
 app.use((err: Error | any, req: Request, res: Response, next: NextFunction) => {
+    // Errores de subida (tamaño excedido, demasiados archivos...) son culpa del cliente
+    if (err instanceof multer.MulterError) {
+        const status = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+        const message = err.code === 'LIMIT_FILE_SIZE'
+            ? `El archivo supera el máximo de ${Math.round(config.maxUploadBytes / 1024 / 1024)} MB`
+            : err.message;
+        res.status(status).json({ error: message });
+        return;
+    }
+
     console.error('[LiteCMS Error]:', err.message);
 
     const statusCode = err.statusCode || 500;
 
-    // Siempre devolvemos el formato exacto exigido en el documento
+    // Siempre devolvemos el formato exacto exigido en el documento.
+    // En errores 5xx no exponemos el mensaje interno (rutas, SQL, etc.) al cliente.
     res.status(statusCode).json({
-        error: err.message || 'Error interno del servidor'
+        error: statusCode < 500 && err.message ? err.message : 'Error interno del servidor'
     });
 });
 
 
 if (process.env.NODE_ENV !== 'test') {
-    app.listen(PORT, async () => {
-        console.log(`🚀 Servidor LiteCMS corriendo en http://localhost:${PORT}`);
+    const start = async () => {
         await checkDatabaseConnection(); // Verificamos la DB al arrancar
+        await runMigrations(); // Instalación nueva o actualización: deja el esquema al día
+        app.listen(config.port, () => {
+            console.log(`🚀 Servidor LiteCMS corriendo en http://localhost:${config.port}`);
+            if (fs.existsSync(adminIndex)) {
+                console.log(`🛠️  Admin disponible en http://localhost:${config.port}/admin`);
+            }
+        });
+    };
+
+    start().catch((error) => {
+        console.error('[LiteCMS] No se pudo iniciar el servidor:', error);
+        process.exit(1);
     });
 }
 

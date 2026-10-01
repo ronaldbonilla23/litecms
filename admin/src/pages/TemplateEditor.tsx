@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
@@ -114,6 +114,7 @@ export default function TemplateEditor() {
                   <option value="header">Header</option>
                   <option value="footer">Footer</option>
                   <option value="section">Section</option>
+                  <option value="blog_single">Blog Single</option>
                 </select>
               </div>
               <div className="flex items-center gap-4">

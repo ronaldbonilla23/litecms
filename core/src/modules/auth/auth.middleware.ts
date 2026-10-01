@@ -38,3 +38,23 @@ export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction)
         res.status(401).json({ error: 'Token inválido o expirado.' });
     }
 };
+
+/**
+ * Autenticación opcional para rutas públicas.
+ * Si llega un token válido, deja req.user (el admin puede ver borradores);
+ * si no llega o es inválido, sigue como visitante anónimo sin devolver error.
+ */
+export const optionalAuth = (req: AuthRequest, res: Response, next: NextFunction): void => {
+    const authHeader = req.header('Authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : undefined;
+    const secret = process.env.JWT_SECRET;
+
+    if (token && secret) {
+        try {
+            req.user = jwt.verify(token, secret);
+        } catch {
+            // Token inválido: se trata como visitante
+        }
+    }
+    next();
+};

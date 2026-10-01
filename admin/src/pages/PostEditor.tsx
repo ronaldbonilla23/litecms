@@ -197,9 +197,9 @@ export default function PostEditor() {
             onChange={(e) => setPostData({ ...postData, status: e.target.value as any })}
             className="w-full bg-[#141414] border border-white/10 text-white px-3 py-2 rounded-lg text-sm focus:border-primary outline-none"
           >
-            <option value="draft"><i className="fi fi-rr-edit"></i> Borrador</option>
-            <option value="published"><i className="fi fi-rr-check-circle"></i> Publicado</option>
-            <option value="scheduled"><i className="fi fi-rr-clock"></i> Programado</option>
+            <option value="draft">Borrador</option>
+            <option value="published">Publicado</option>
+            <option value="scheduled">Programado</option>
           </select>
         </div>
 

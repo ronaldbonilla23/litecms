@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { installCMS } from './install.controller';
+import { installCMS, getInstallStatus } from './install.controller';
 
 const router = Router();
 
-// Esta ruta responderá a solicitudes POST en /api/install
+router.get('/status', getInstallStatus);
 router.post('/', installCMS);
 
 export default router;

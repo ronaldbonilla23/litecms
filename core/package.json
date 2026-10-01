@@ -1,11 +1,13 @@
 {
   "name": "core",
   "version": "1.0.0",
-  "description": "",
+  "description": "LiteCMS core: API, render y servidor de archivos",
   "main": "index.js",
   "scripts": {
-    "test": "vitest",
-    "dev": "nodemon src/index.ts"
+    "dev": "nodemon src/index.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/core/src/index.js",
+    "test": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -26,11 +28,15 @@
     "vitest": "^4.1.1"
   },
   "dependencies": {
+    "@tailwindcss/typography": "^0.5.19",
     "autoprefixer": "^10.4.27",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "handlebars": "^4.7.9",
+    "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "knex": "^3.2.5",
     "multer": "^2.1.1",

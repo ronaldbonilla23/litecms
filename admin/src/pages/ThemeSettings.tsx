@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { uploadUrl } from '../lib/urls';
 
 // Lista de fuentes disponibles
 const FONT_OPTIONS = [
@@ -441,7 +442,7 @@ export default function ThemeSettings() {
                                 <div className="flex items-start gap-4">
                                     <div className="w-32 h-32 bg-[#141414] border border-white/10 rounded-xl flex items-center justify-center overflow-hidden">
                                         {settings.logo_url ? (
-                                            <img src={`http://localhost:3000/uploads/${settings.logo_url}`} alt="Logo" className="w-full h-full object-contain p-2" />
+                                            <img src={uploadUrl(settings.logo_url)} alt="Logo" className="w-full h-full object-contain p-2" />
                                         ) : (
                                             <span className="text-gray-600 text-xs text-center">Sin logo</span>
                                         )}
@@ -469,7 +470,7 @@ export default function ThemeSettings() {
                                 <div className="flex items-start gap-4">
                                     <div className="w-16 h-16 bg-[#141414] border border-white/10 rounded-lg flex items-center justify-center overflow-hidden">
                                         {settings.favicon_url ? (
-                                            <img src={`http://localhost:3000/uploads/${settings.favicon_url}`} alt="Favicon" className="w-full h-full object-cover" />
+                                            <img src={uploadUrl(settings.favicon_url)} alt="Favicon" className="w-full h-full object-cover" />
                                         ) : (
                                             <span className="text-gray-600 text-[10px] text-center">Sin favicon</span>
                                         )}
@@ -521,7 +522,7 @@ export default function ThemeSettings() {
                             {mediaList.map((item: any) => (
                                 <div key={item.id} onClick={() => selectMedia(item.filename)}
                                     className="group relative aspect-square bg-black/40 rounded-xl overflow-hidden border border-white/5 hover:border-[#C2F86C] transition-all cursor-pointer">
-                                    <img src={`http://localhost:3000/uploads/${item.filename}`} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                                    <img src={uploadUrl(item.filename)} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
                                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-[#C2F86C]/10 backdrop-blur-[2px] transition-opacity">
                                         <span className="bg-[#C2F86C] text-black font-bold text-xs px-3 py-1.5 rounded-full">SELECT</span>
                                     </div>

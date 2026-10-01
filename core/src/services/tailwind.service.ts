@@ -3,6 +3,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { config } from '../config';
 
 export const compileTailwindCSS = async (htmlContent: string, themeSettings: any, pageId?: string): Promise<string> => {
   try {
@@ -75,6 +76,14 @@ export const compileTailwindCSS = async (htmlContent: string, themeSettings: any
         // Group
         'group', 'group-hover:translate-x-0', 'group-hover:opacity-100',
         'group-focus:translate-x-0', 'group-focus:opacity-100',
+        // Quill JS Classes (Safelist for rich text content)
+        'ql-align-center', 'ql-align-right', 'ql-align-justify',
+        'ql-size-small', 'ql-size-large', 'ql-size-huge',
+        'ql-font-serif', 'ql-font-monospace',
+        'ql-code-block-container', 'ql-syntax', 'ql-video',
+        'ql-indent-1', 'ql-indent-2', 'ql-indent-3', 'ql-indent-4',
+        'ql-indent-5', 'ql-indent-6', 'ql-indent-7', 'ql-indent-8',
+        'ql-editor', 'prose', 'prose-invert', 'prose-lg', 'prose-primary'
       ],
       theme: {
         extend: {
@@ -93,7 +102,10 @@ export const compileTailwindCSS = async (htmlContent: string, themeSettings: any
           },
         },
       },
-      corePlugins: { preflight: true }, // Activado: ahora solo hay UN CSS por vista
+      corePlugins: { preflight: true },
+      plugins: [
+        require('@tailwindcss/typography')
+      ],
     };
 
     const cssInput = '@tailwind base;\n@tailwind components;\n@tailwind utilities;';
@@ -125,16 +137,20 @@ export const compileTailwindCSS = async (htmlContent: string, themeSettings: any
  */
 const saveCssToFile = (css: string, pageId: string): void => {
   try {
-    // Ruta al directorio público de CSS (usando process.cwd() para mayor confiabilidad)
-    const publicCssDir = path.join(process.cwd(), 'public', 'css');
+    const publicCssDir = config.paths.css;
 
     // Crear directorio si no existe
     if (!fs.existsSync(publicCssDir)) {
       fs.mkdirSync(publicCssDir, { recursive: true });
     }
 
-    // Nombre del archivo: page-{id}.css
-    const filePath = path.join(publicCssDir, `page-${pageId}.css`);
+    // Nombre del archivo: Si ya empieza con 'master-' o similar, lo usamos tal cual
+    let filename = `page-${pageId}.css`;
+    if (pageId.startsWith('section-')) {
+      filename = `${pageId}.css`;
+    }
+    
+    const filePath = path.join(publicCssDir, filename);
 
     // Escribir archivo
     fs.writeFileSync(filePath, css, 'utf8');

@@ -3,12 +3,10 @@ import db from '../../database';
 import fs from 'fs';
 import path from 'path';
 import { MediaSchema } from '../../../../shared/types';
+import { config } from '../../config';
 
 export const uploadFile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        console.log('--- REQ.FILE EN LLEGADA ---');
-        console.log(req.file);
-        console.log('--- FIN REQ.FILE ---');
 
         if (!req.file) {
             // Llegó undefind, puede que no se envíe con el form-data "file" o el archivo fue rechazado
@@ -55,9 +53,8 @@ export const deleteMedia = async (req: Request, res: Response, next: NextFunctio
             return;
         }
 
-        // Eliminar del disco
-        const baseUploadsDir = path.join(__dirname, '../../../../content/uploads');
-        const filePhysicalPath = path.join(baseUploadsDir, mediaItem.filename);
+        // Eliminar del disco (basename evita rutas fuera de /uploads)
+        const filePhysicalPath = path.join(config.paths.uploads, path.basename(mediaItem.filename));
 
         try {
             await fs.promises.unlink(filePhysicalPath);

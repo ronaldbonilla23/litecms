@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as postsController from './posts.controller';
-import { verifyToken } from '../auth/auth.middleware';
+import { verifyToken, optionalAuth } from '../auth/auth.middleware';
 
 const router = Router();
 
@@ -13,8 +13,8 @@ const router = Router();
  */
 
 // Rutas PÚBLICAS (cualquiera puede leer posts publicados)
-router.get('/', postsController.getAllPosts); // Listar posts (con filtros)
-router.get('/slug/:slug', postsController.getPostBySlug); // Obtener post por slug
+router.get('/', optionalAuth, postsController.getAllPosts); // Listar posts (con filtros)
+router.get('/slug/:slug', optionalAuth, postsController.getPostBySlug); // Obtener post por slug
 router.get('/:id/related', postsController.getRelatedPosts); // Posts relacionados
 
 // Rutas PROTEGIDAS (requieren autenticación)

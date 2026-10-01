@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 
 export const Login = () => {
@@ -6,6 +7,16 @@ export const Login = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [notification, setNotification] = useState<string | null>(null);
+    const navigate = useNavigate();
+
+    // Instalación nueva: si aún no hay administrador, mostramos el asistente
+    useEffect(() => {
+        api.get('/install/status')
+            .then(({ data }) => {
+                if (!data.installed) navigate('/setup', { replace: true });
+            })
+            .catch(() => undefined);
+    }, [navigate]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -21,9 +32,9 @@ export const Login = () => {
             const response = await api.post('/auth/login', { email, password });
             localStorage.setItem('token', response.data.token);
             setNotification('Identificación exitosa. Redirigiendo...');
-            window.location.href = '/dashboard';
+            navigate('/dashboard', { replace: true });
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Error: Credenciales incorrectas. Verifica tus datos e inténtalo de nuevo.');
+            setError(err.response?.data?.error || 'Error: Credenciales incorrectas. Verifica tus datos e inténtalo de nuevo.');
         }
     };
 

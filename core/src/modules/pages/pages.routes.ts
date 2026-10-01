@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { createPage, getPageBySlug, getAllPages, updatePage, getPageById, deletePage } from './pages.controller';
-import { verifyToken } from '../auth/auth.middleware';
+import { verifyToken, optionalAuth } from '../auth/auth.middleware';
 
 const router = Router();
 
 // Rutas públicas (por slug) - Usar Query Params
-router.get('/by-slug', getPageBySlug);
+router.get('/by-slug', optionalAuth, getPageBySlug);
 
 // Rutas protegidas
 router.get('/', verifyToken, getAllPages);
