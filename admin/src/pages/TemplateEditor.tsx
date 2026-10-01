@@ -115,10 +115,16 @@ export default function TemplateEditor() {
                   <option value="footer">Footer</option>
                   <option value="section">Section</option>
                   <option value="blog_single">Blog Single</option>
+                  <option value="single">Entrada (tipo de contenido)</option>
+                  <option value="archive">Archivo (tipo de contenido)</option>
                 </select>
               </div>
               <div className="flex items-center gap-4">
-                <span className="text-xs text-gray-500">Tip: Usa {'{{ page.title }}'} para variables</span>
+                <span className="text-xs text-gray-500">
+                  {activeTemplate.type === 'single' && <>Tip: {'{{entry.title}}'}, {'{{entry.fields.clave}}'}, {'{{{entry.fields.texto_enriquecido}}}'}</>}
+                  {activeTemplate.type === 'archive' && <>Tip: {'{{#each entries}}<a href="{{url}}">{{title}}</a>{{/each}}'}</>}
+                  {activeTemplate.type !== 'single' && activeTemplate.type !== 'archive' && <>Tip: {'{{page.title}}'} · {'{{#each (query "proyectos" limit=3)}}…{{/each}}'}</>}
+                </span>
                 {activeTemplate.id && (
                   <button onClick={handleDelete} className="text-red-500 hover:text-red-400 text-xs font-bold uppercase tracking-widest transition-colors">
                     Delete

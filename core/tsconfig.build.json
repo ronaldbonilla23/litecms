@@ -2,20 +2,13 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "..",
     "declaration": false,
     "declarationMap": false,
-    "sourceMap": true,
-    "baseUrl": ".",
-    "paths": {
-      "zod": [
-        "./node_modules/zod"
-      ]
-    }
+    "sourceMap": true
   },
   "include": [
     "src/**/*.ts",
-    "../shared/types.ts"
+    "../shared/*.ts"
   ],
   "exclude": [
     "src/**/*.test.ts",

@@ -14,6 +14,10 @@ import { Posts } from './pages/Posts';
 import PostEditor from './pages/PostEditor';
 import { Categories } from './pages/Categories';
 import { Tags } from './pages/Tags';
+import { ContentTypes } from './pages/ContentTypes';
+import ContentTypeEditor from './pages/ContentTypeEditor';
+import { Entries } from './pages/Entries';
+import EntryEditor from './pages/EntryEditor';
 
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const token = localStorage.getItem('token');
@@ -163,6 +167,14 @@ function App() {
             </ProtectedRoute>
           }
         />
+        {/* Tipos de contenido y sus entradas */}
+        <Route path="/dashboard/content-types" element={<ProtectedRoute><ContentTypes /></ProtectedRoute>} />
+        <Route path="/dashboard/content-types/new" element={<ProtectedRoute><ContentTypeEditor /></ProtectedRoute>} />
+        <Route path="/dashboard/content-types/:id" element={<ProtectedRoute><ContentTypeEditor /></ProtectedRoute>} />
+        <Route path="/dashboard/content/:typeSlug" element={<ProtectedRoute><Entries /></ProtectedRoute>} />
+        <Route path="/dashboard/content/:typeSlug/new" element={<ProtectedRoute><EntryEditor /></ProtectedRoute>} />
+        <Route path="/dashboard/content/:typeSlug/edit/:id" element={<ProtectedRoute><EntryEditor /></ProtectedRoute>} />
+
         {/* Redirect any unknown route to dashboard (which will redirect to login if not authenticated) */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
 

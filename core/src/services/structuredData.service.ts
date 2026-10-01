@@ -139,3 +139,30 @@ export const generateBreadcrumbs = (items: Array<{ name: string; url: string }>)
     'item': toAbsolute(item.url)
   }))
 });
+
+// Archivo de un tipo de contenido (/proyectos): página de colección con la lista de entradas
+export const generateCollectionStructuredData = (collection: {
+  title: string;
+  description: string;
+  url: string;
+  items: Array<{ name: string; url: string }>;
+}): Record<string, any> => ({
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  '@id': collection.url,
+  'url': collection.url,
+  'name': collection.title,
+  'description': collection.description,
+  'inLanguage': config.siteLang,
+  'isPartOf': { '@type': 'WebSite', 'name': config.siteName, 'url': config.siteUrl },
+  'mainEntity': {
+    '@type': 'ItemList',
+    'numberOfItems': collection.items.length,
+    'itemListElement': collection.items.map((item, index) => ({
+      '@type': 'ListItem',
+      'position': index + 1,
+      'name': item.name,
+      'url': toAbsolute(item.url)
+    }))
+  }
+});

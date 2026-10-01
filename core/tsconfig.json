@@ -5,6 +5,10 @@
     "module": "CommonJS",
     "moduleResolution": "node",
     "ignoreDeprecations": "6.0",
+    // shared/ no tiene node_modules: sus imports se resuelven con los de core
+    "rootDir": "..",
+    "baseUrl": ".",
+    "paths": { "zod": ["./node_modules/zod"] },
     "esModuleInterop": true,
     "types": [],
     // Other Outputs

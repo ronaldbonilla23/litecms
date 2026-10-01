@@ -13,7 +13,15 @@ import { compileTailwindCSS } from '../../services/tailwind.service';
  * ============================================================================
  */
 
-export type CssOwner = 'page' | 'post';
+export type CssOwner = 'page' | 'post' | 'entry' | 'archive';
+
+// Dónde guarda cada tipo de documento su CSS compilado
+const CSS_STORAGE: Record<CssOwner, { table: string; column: string }> = {
+    page: { table: 'pages', column: 'compiled_css' },
+    post: { table: 'posts', column: 'compiled_css' },
+    entry: { table: 'entries', column: 'compiled_css' },
+    archive: { table: 'content_types', column: 'archive_css' },
+};
 
 export const cssHash = (css: string): string =>
     crypto.createHash('sha1').update(css).digest('hex').slice(0, 10);
@@ -61,9 +69,19 @@ export const compilePostCss = async (postId: number, fullHtml: string): Promise<
 };
 
 export const getStoredCss = async (owner: CssOwner, id: number): Promise<string | null> => {
-    const table = owner === 'page' ? 'pages' : 'posts';
-    const row = await db(table).where({ id }).first('compiled_css');
-    return row?.compiled_css || null;
+    const { table, column } = CSS_STORAGE[owner];
+    const row = await db(table).where({ id }).first(column);
+    return row?.[column] || null;
+};
+
+// Entradas y archivos de tipos de contenido: se compila a partir del HTML ya renderizado
+export const compileRenderedCss = async (owner: 'entry' | 'archive', id: number, renderedHtml: string): Promise<string> => {
+    const compiledCss = await compileTailwindCSS(renderedHtml, await getThemeSettings());
+    if (compiledCss) {
+        const { table, column } = CSS_STORAGE[owner];
+        await db(table).where({ id }).update({ [column]: compiledCss });
+    }
+    return compiledCss;
 };
 
 /**
@@ -74,6 +92,8 @@ export const invalidateAllCss = async (): Promise<void> => {
     await Promise.all([
         db('pages').update({ compiled_css: null }),
         db('posts').update({ compiled_css: null }),
+        db('entries').update({ compiled_css: null }),
+        db('content_types').update({ archive_css: null }),
     ]);
 };
 
@@ -82,5 +102,8 @@ export const invalidateCssForTemplate = async (templateId: string): Promise<void
     await Promise.all([
         db('pages').where({ header_id: templateId }).orWhere({ footer_id: templateId }).update({ compiled_css: null }),
         db('posts').update({ compiled_css: null }),
+        // Las entradas usan header/footer activos o plantillas single/archive: se invalidan todas
+        db('entries').update({ compiled_css: null }),
+        db('content_types').update({ archive_css: null }),
     ]);
 };

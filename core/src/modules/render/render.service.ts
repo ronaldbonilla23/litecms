@@ -3,11 +3,20 @@ import crypto from 'crypto';
 import db from '../../database';
 import { config } from '../../config';
 import * as postsService from '../posts/posts.service';
+import { getDefaultSettings } from '../themeSettings/themeSettings.controller';
 import { findRedirect, normalizePath } from '../redirects/redirects.service';
-import { generateBreadcrumbs, generateOrganization, generatePageStructuredData } from '../../services/structuredData.service';
-import { buildPageLayoutHtml, compilePageCss, cssHref } from './css.service';
+import {
+    generateBreadcrumbs, generateCollectionStructuredData, generateOrganization, generatePageStructuredData,
+} from '../../services/structuredData.service';
+import type { ContentType } from '../../../../shared/contentTypes';
+import { buildPageLayoutHtml, compilePageCss, compileRenderedCss, cssHref } from './css.service';
 import { buildDocument, toMetaDescription, type ThemeHead } from './document';
 import { enhanceImages, loadMediaIndex } from './images';
+import {
+    DEFAULT_ARCHIVE_TEMPLATE, DEFAULT_SINGLE_TEMPLATE,
+    loadPublishedEntries, loadPublishedEntry, matchContentRoute, preloadQueries, toTemplateEntries,
+    type ContentRoute, type QueryStore,
+} from './content';
 
 /**
  * ============================================================================
@@ -17,6 +26,8 @@ import { enhanceImages, loadMediaIndex } from './images';
  *   /            → página con slug "/"
  *   /blog/:slug  → post publicado (layout blog_single)
  *   /cualquier   → página publicada con ese slug
+ *   /prefijo     → archivo de un tipo de contenido (ej: /proyectos)
+ *   /prefijo/:s  → entrada de un tipo de contenido (ej: /proyectos/casa-azul)
  * Si no existe: redirección 301 registrada, o 404 (página "/404" si existe).
  * ============================================================================
  */
@@ -49,6 +60,31 @@ const cacheSet = (key: string, value: RenderOutcome): void => {
 const handlebars = Handlebars.create();
 const templateCache = new Map<string, HandlebarsTemplateDelegate>();
 
+/**
+ * Helpers disponibles en todas las plantillas:
+ *   {{#each (query "proyectos" limit=3)}}...{{/each}}  → entradas publicadas de un tipo
+ *   {{formatDate entry.published_at}}                    → "1 de octubre de 2026"
+ *   {{#if (eq entry.fields.estado "Vendido")}}...{{/if}}
+ */
+handlebars.registerHelper('query', function (slug: unknown, options: Handlebars.HelperOptions) {
+    const store: QueryStore = options.data?.root?.__queries ?? {};
+    const entries = store[String(slug)] ?? [];
+    const limit = Number(options.hash?.limit);
+    return Number.isInteger(limit) && limit > 0 ? entries.slice(0, limit) : entries;
+});
+
+handlebars.registerHelper('formatDate', function (value: unknown, format: unknown) {
+    if (!value) return '';
+    const date = new Date(String(value));
+    if (Number.isNaN(date.getTime())) return '';
+    const style = typeof format === 'string' && ['short', 'medium', 'long', 'full'].includes(format)
+        ? format as 'short' | 'medium' | 'long' | 'full'
+        : 'long';
+    return new Intl.DateTimeFormat(config.siteLang, { dateStyle: style, timeZone: 'UTC' }).format(date);
+});
+
+handlebars.registerHelper('eq', (a: unknown, b: unknown) => a === b);
+
 const renderTemplate = (source: string, context: Record<string, any>): string => {
     const key = crypto.createHash('sha1').update(source).digest('hex');
     let template = templateCache.get(key);
@@ -73,7 +109,9 @@ const uploadPath = (filename?: string | null): string | null =>
     filename ? (filename.startsWith('http') || filename.startsWith('/') ? filename : `/uploads/${filename}`) : null;
 
 const loadTheme = async () => {
-    const settings = (await db('theme_settings').first()) || {};
+    // Instalación nueva sin Design System guardado: se usan los valores por defecto
+    const stored = (await db('theme_settings').first()) || {};
+    const settings = { ...getDefaultSettings(), ...Object.fromEntries(Object.entries(stored).filter(([, value]) => value !== null && value !== '')) };
     const theme: ThemeHead = {
         backgroundColor: settings.background_color,
         headerFont: settings.header_font,
@@ -107,6 +145,7 @@ const renderPage = async (path: string, status = 200): Promise<RenderOutcome | n
     const body = renderTemplate(layoutHtml, {
         page: { ...page, fields, compiled_css: undefined },
         site: siteContext(logoUrl),
+        __queries: await preloadQueries(layoutHtml),
     });
 
     let imageUrl: string | null = null;
@@ -181,6 +220,111 @@ const renderPost = async (slug: string): Promise<RenderOutcome | null> => {
 };
 
 // ----------------------------------------------------------------------------
+// Tipos de contenido: archivo (/proyectos) y entrada (/proyectos/casa-azul)
+// ----------------------------------------------------------------------------
+const templateContent = async (id: string | null | undefined): Promise<string | null> =>
+    id ? (await db('templates').where({ id }).first('content'))?.content ?? null : null;
+
+// Header/footer del tipo o, si no tiene, los activos del sitio (igual que el blog)
+const contentLayout = async (type: ContentType) => {
+    const [header, footer] = await Promise.all([
+        type.header_id
+            ? templateContent(type.header_id)
+            : db('templates').where({ type: 'header', is_active: true }).first('content').then((row) => row?.content ?? null),
+        type.footer_id
+            ? templateContent(type.footer_id)
+            : db('templates').where({ type: 'footer', is_active: true }).first('content').then((row) => row?.content ?? null),
+    ]);
+    return { header: header ?? '', footer: footer ?? '' };
+};
+
+const renderContent = async (route: ContentRoute): Promise<RenderOutcome | null> => {
+    const { type } = route;
+    const { theme, logoUrl } = await loadTheme();
+    const layout = await contentLayout(type);
+    const typeContext = { name: type.name, singular_name: type.singular_name, description: type.description, url_prefix: type.url_prefix };
+
+    if (route.kind === 'single') {
+        const entry = await loadPublishedEntry(type.id, route.slug);
+        if (!entry) return null;
+
+        const [templateEntry] = await toTemplateEntries(type, [entry]);
+        const source = `${layout.header}\n${(await templateContent(type.single_template_id)) ?? DEFAULT_SINGLE_TEMPLATE}\n${layout.footer}`;
+        const body = renderTemplate(source, {
+            entry: templateEntry,
+            type: typeContext,
+            site: siteContext(logoUrl),
+            __queries: await preloadQueries(source),
+        });
+        const css = entry.compiled_css || await compileRenderedCss('entry', entry.id, body);
+
+        const path = `${type.url_prefix}/${entry.slug}`;
+        const canonicalUrl = `${config.siteUrl}${path}`;
+        const title = entry.meta_title || `${entry.title} | ${config.siteName}`;
+        const description = entry.meta_description || toMetaDescription(
+            Object.values(entry.data).filter((value): value is string => typeof value === 'string').join(' ') || entry.title
+        );
+
+        let imageUrl: string | null = null;
+        if (entry.og_image_id) {
+            const ogImage = await db('media').where({ id: entry.og_image_id }).first('filename');
+            imageUrl = uploadPath(ogImage?.filename);
+        } else {
+            // Sin imagen SEO explícita: la primera imagen de los campos
+            const firstImage = templateEntry?.field_list.find((field) => field.is_image)?.value as { url?: string } | undefined;
+            imageUrl = firstImage?.url ?? null;
+        }
+
+        const html = buildDocument({
+            seo: { title, description, canonicalUrl, indexable: true, ogType: 'article', imageUrl, article: { publishedTime: entry.published_at, modifiedTime: entry.updated_at } },
+            theme,
+            cssHref: css ? cssHref('entry', entry.id, css) : null,
+            jsonLd: [
+                ...generatePageStructuredData({ title, description, url: canonicalUrl, imageUrl, updatedAt: entry.updated_at, isHome: false, logoUrl }),
+                generateBreadcrumbs([
+                    { name: config.siteName, url: '/' },
+                    ...(type.has_archive ? [{ name: type.name, url: type.url_prefix }] : []),
+                    { name: entry.title, url: path },
+                ]),
+            ],
+            body: await finalizeBody(body),
+        });
+        return { kind: 'html', status: 200, html };
+    }
+
+    // Archivo
+    const entries = await toTemplateEntries(type, await loadPublishedEntries(type.id));
+    const source = `${layout.header}\n${(await templateContent(type.archive_template_id)) ?? DEFAULT_ARCHIVE_TEMPLATE}\n${layout.footer}`;
+    const body = renderTemplate(source, {
+        entries,
+        type: typeContext,
+        site: siteContext(logoUrl),
+        __queries: await preloadQueries(source),
+    });
+    const storedCss = (await db('content_types').where({ id: type.id }).first('archive_css'))?.archive_css;
+    const css = storedCss || await compileRenderedCss('archive', type.id, body);
+
+    const canonicalUrl = `${config.siteUrl}${type.url_prefix}`;
+    const title = `${type.name} | ${config.siteName}`;
+    const description = type.description || `${type.name} de ${config.siteName}`;
+
+    const html = buildDocument({
+        seo: { title, description, canonicalUrl, indexable: true, ogType: 'website' },
+        theme,
+        cssHref: css ? cssHref('archive', type.id, css) : null,
+        jsonLd: [
+            generateCollectionStructuredData({
+                title, description, url: canonicalUrl,
+                items: entries.map((entry) => ({ name: entry.title, url: entry.url })),
+            }),
+            generateBreadcrumbs([{ name: config.siteName, url: '/' }, { name: type.name, url: type.url_prefix }]),
+        ],
+        body: await finalizeBody(body),
+    });
+    return { kind: 'html', status: 200, html };
+};
+
+// ----------------------------------------------------------------------------
 // 404
 // ----------------------------------------------------------------------------
 const renderNotFound = async (): Promise<RenderOutcome> => {
@@ -235,6 +379,12 @@ export const renderPath = async (rawPath: string): Promise<RenderOutcome> => {
     let outcome: RenderOutcome | null = path.startsWith(BLOG_PREFIX)
         ? await renderPost(path.slice(BLOG_PREFIX.length))
         : await renderPage(path);
+
+    // Una página con la misma URL tiene prioridad sobre el archivo de un tipo de contenido
+    if (!outcome) {
+        const contentRoute = await matchContentRoute(path);
+        if (contentRoute) outcome = await renderContent(contentRoute);
+    }
 
     if (!outcome) {
         const redirect = await findRedirect(path);

@@ -4,11 +4,11 @@
   "description": "LiteCMS core: API, render y servidor de archivos",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon src/index.ts",
+    "dev": "NODE_PATH=./node_modules nodemon src/index.ts",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/core/src/index.js",
     "test": "vitest",
-    "media:variants": "ts-node src/scripts/generate-media-variants.ts"
+    "media:variants": "NODE_PATH=./node_modules ts-node src/scripts/generate-media-variants.ts"
   },
   "keywords": [],
   "author": "",

@@ -20,7 +20,7 @@ const EXTENSION_BY_MIME: Record<string, string> = {
 const sanitizeBaseName = (originalName: string): string => {
     const base = path.parse(originalName).name
         .normalize('NFD')
-        .replace(/[̀-ͯ]/g, '')
+        .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '')

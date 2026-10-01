@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import { apiErrorBody, apiErrorMessage } from '../lib/errors';
 
 type FieldErrors = Partial<Record<'name' | 'email' | 'password', string[]>>;
 
@@ -43,9 +44,9 @@ export const Setup = () => {
             const { data } = await api.post('/auth/login', { email, password });
             localStorage.setItem('token', data.token);
             navigate('/dashboard', { replace: true });
-        } catch (err: any) {
-            setFieldErrors(err.response?.data?.details || {});
-            setError(err.response?.data?.error || 'No se pudo completar la instalación.');
+        } catch (err) {
+            setFieldErrors((apiErrorBody(err).details as FieldErrors | undefined) || {});
+            setError(apiErrorMessage(err, 'No se pudo completar la instalación.'));
         } finally {
             setSubmitting(false);
         }

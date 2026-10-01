@@ -72,6 +72,23 @@ export const generateLlmsTxt = async (): Promise<string> => {
         lines.push('');
     }
 
+    // Una sección por cada tipo de contenido (Proyectos, Servicios...)
+    const types = await db('content_types').select('id', 'name', 'description', 'url_prefix', 'has_archive').orderBy('name', 'asc');
+    for (const type of types) {
+        const entries = await db('entries')
+            .where({ type_id: type.id, status: 'published' })
+            .select('title', 'slug', 'meta_description')
+            .orderBy('published_at', 'desc')
+            .limit(LLMS_MAX_POSTS);
+        if (entries.length === 0) continue;
+
+        lines.push(`## ${mdText(type.name)}`, '');
+        if (type.description) lines.push(mdText(type.description), '');
+        if (type.has_archive) lines.push(entry(`Todos: ${type.name}`, type.url_prefix));
+        entries.forEach((item) => lines.push(entry(item.title, `${type.url_prefix}/${item.slug}`, item.meta_description)));
+        lines.push('');
+    }
+
     lines.push('## Opcional', '', `- [Sitemap](${config.siteUrl}/sitemap.xml): lista completa de URLs`, '');
     return lines.join('\n');
 };
