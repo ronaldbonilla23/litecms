@@ -1,5 +1,3 @@
-import Handlebars from 'handlebars';
-import crypto from 'crypto';
 import db from '../../database';
 import { config } from '../../config';
 import * as postsService from '../posts/posts.service';
@@ -10,12 +8,14 @@ import {
 } from '../../services/structuredData.service';
 import type { ContentType } from '../../../../shared/contentTypes';
 import { buildPageLayoutHtml, compilePageCss, compileRenderedCss, cssHref } from './css.service';
-import { buildDocument, toMetaDescription, type ThemeHead } from './document';
+import { buildDocument, toMetaDescription, type DocumentInput, type ThemeHead } from './document';
+import { applyFilters } from '../../plugins/hooks';
 import { enhanceImages, loadMediaIndex } from './images';
+import { renderTemplate } from './templating';
 import {
     DEFAULT_ARCHIVE_TEMPLATE, DEFAULT_SINGLE_TEMPLATE,
     loadPublishedEntries, loadPublishedEntry, matchContentRoute, preloadQueries, toTemplateEntries,
-    type ContentRoute, type QueryStore,
+    type ContentRoute,
 } from './content';
 
 /**
@@ -55,54 +55,6 @@ const cacheSet = (key: string, value: RenderOutcome): void => {
 };
 
 // ----------------------------------------------------------------------------
-// Handlebars: instancia aislada + plantillas compiladas cacheadas por contenido
-// ----------------------------------------------------------------------------
-const handlebars = Handlebars.create();
-const templateCache = new Map<string, HandlebarsTemplateDelegate>();
-
-/**
- * Helpers disponibles en todas las plantillas:
- *   {{#each (query "proyectos" limit=3)}}...{{/each}}  → entradas publicadas de un tipo
- *   {{formatDate entry.published_at}}                    → "1 de octubre de 2026"
- *   {{#if (eq entry.fields.estado "Vendido")}}...{{/if}}
- */
-handlebars.registerHelper('query', function (slug: unknown, options: Handlebars.HelperOptions) {
-    const store: QueryStore = options.data?.root?.__queries ?? {};
-    const entries = store[String(slug)] ?? [];
-    const limit = Number(options.hash?.limit);
-    return Number.isInteger(limit) && limit > 0 ? entries.slice(0, limit) : entries;
-});
-
-handlebars.registerHelper('formatDate', function (value: unknown, format: unknown) {
-    if (!value) return '';
-    const date = new Date(String(value));
-    if (Number.isNaN(date.getTime())) return '';
-    const style = typeof format === 'string' && ['short', 'medium', 'long', 'full'].includes(format)
-        ? format as 'short' | 'medium' | 'long' | 'full'
-        : 'long';
-    return new Intl.DateTimeFormat(config.siteLang, { dateStyle: style, timeZone: 'UTC' }).format(date);
-});
-
-handlebars.registerHelper('eq', (a: unknown, b: unknown) => a === b);
-
-const renderTemplate = (source: string, context: Record<string, any>): string => {
-    const key = crypto.createHash('sha1').update(source).digest('hex');
-    let template = templateCache.get(key);
-    if (!template) {
-        template = handlebars.compile(source);
-        if (templateCache.size > 200) templateCache.clear();
-        templateCache.set(key, template);
-    }
-    try {
-        return template(context);
-    } catch (error: any) {
-        // Una plantilla con sintaxis inválida no debe tumbar el sitio: se muestra sin procesar
-        console.error('[Render] Error en plantilla Handlebars:', error.message);
-        return source;
-    }
-};
-
-// ----------------------------------------------------------------------------
 // Datos comunes
 // ----------------------------------------------------------------------------
 const uploadPath = (filename?: string | null): string | null =>
@@ -128,6 +80,24 @@ const siteContext = (logoUrl: string | null) => ({
     logo_url: logoUrl,
     year: new Date().getFullYear(),
 });
+
+export interface RenderContext {
+    kind: 'page' | 'post' | 'entry' | 'archive' | '404';
+    path: string | null;
+}
+
+/**
+ * Arma el documento final pasando por los filtros de plugins:
+ * render.head y render.bodyEnd (arrays de HTML) y render.html (documento completo).
+ */
+const composeDocument = async (context: RenderContext, input: DocumentInput): Promise<string> => {
+    const [extraHead, bodyEnd] = await Promise.all([
+        applyFilters<string[]>('render.head', [], context),
+        applyFilters<string[]>('render.bodyEnd', [], context),
+    ]);
+    const html = buildDocument({ ...input, extraHead, bodyEnd });
+    return applyFilters('render.html', html, context);
+};
 
 const finalizeBody = async (html: string): Promise<string> => enhanceImages(html, await loadMediaIndex());
 
@@ -159,7 +129,7 @@ const renderPage = async (path: string, status = 200): Promise<RenderOutcome | n
     const title = page.meta_title || (isHome ? config.siteName : `${page.title} | ${config.siteName}`);
     const description = page.meta_description || toMetaDescription(page.content || page.title);
 
-    const html = buildDocument({
+    const html = await composeDocument({ kind: 'page', path }, {
         seo: { title, description, canonicalUrl, indexable: status === 200, ogType: 'website', imageUrl },
         theme,
         cssHref: css ? cssHref('page', page.id, css) : null,
@@ -199,7 +169,7 @@ const renderPost = async (slug: string): Promise<RenderOutcome | null> => {
         { name: metadata.title, url: path },
     ]));
 
-    const html = buildDocument({
+    const html = await composeDocument({ kind: 'post', path }, {
         seo: {
             title, description, canonicalUrl, indexable: true, ogType: 'article', imageUrl,
             article: {
@@ -275,7 +245,7 @@ const renderContent = async (route: ContentRoute): Promise<RenderOutcome | null>
             imageUrl = firstImage?.url ?? null;
         }
 
-        const html = buildDocument({
+        const html = await composeDocument({ kind: 'entry', path }, {
             seo: { title, description, canonicalUrl, indexable: true, ogType: 'article', imageUrl, article: { publishedTime: entry.published_at, modifiedTime: entry.updated_at } },
             theme,
             cssHref: css ? cssHref('entry', entry.id, css) : null,
@@ -308,7 +278,7 @@ const renderContent = async (route: ContentRoute): Promise<RenderOutcome | null>
     const title = `${type.name} | ${config.siteName}`;
     const description = type.description || `${type.name} de ${config.siteName}`;
 
-    const html = buildDocument({
+    const html = await composeDocument({ kind: 'archive', path: type.url_prefix }, {
         seo: { title, description, canonicalUrl, indexable: true, ogType: 'website' },
         theme,
         cssHref: css ? cssHref('archive', type.id, css) : null,
@@ -332,7 +302,7 @@ const renderNotFound = async (): Promise<RenderOutcome> => {
     if (customPage) return customPage;
 
     const { theme } = await loadTheme();
-    const html = buildDocument({
+    const html = await composeDocument({ kind: '404', path: null }, {
         seo: {
             title: `Página no encontrada | ${config.siteName}`,
             description: 'La página que buscas no existe.',

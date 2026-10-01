@@ -67,6 +67,11 @@ GET/POST/PUT/DELETE /api/pages (CRUD de contenidos)
 - Helpers Handlebars: `{{#each (query "slug-del-tipo" limit=3)}}` en cualquier plantilla o página, `{{formatDate fecha "long"}}`, `(eq a b)`. `query` se precarga antes de renderizar (Handlebars no admite helpers asíncronos).
 - Páginas y posts siguen siendo tipos integrados con tablas propias.
 
+🧩 Plugins y temas:
+- Plugins en `/plugins/<nombre>/` (plugin.json + index.js con `register(api)`). Núcleo en `core/src/plugins/`: `hooks.ts` (filtros y acciones), `registry.ts` (carga en caliente, API del plugin, rutas en `/api/plugins/<nombre>`) y `plugins.routes.ts` (gestión en `/api/extensions/plugins`). Guía: `plugins/README.md`.
+- Temas en `/themes/<nombre>/` (theme.json + plantillas). `core/src/themes/themes.service.ts` aplica el tema de forma idempotente y nunca sobrescribe contenido existente. Guía: `themes/README.md`.
+- Nuevos puntos de extensión: añadir el hook en `FILTER_HOOKS` o `ACTION_HOOKS` (hooks.ts), invocarlo con `applyFilters` o `fireAction` y documentarlo en `plugins/README.md`.
+
 🚀 3. Flujos de Trabajo (Workflow Skills)
 Reglas para la generación de nuevo código:
 

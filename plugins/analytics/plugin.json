@@ -1,0 +1,12 @@
+{
+  "name": "analytics",
+  "title": "Analítica",
+  "version": "1.0.0",
+  "description": "Añade Google Analytics 4 o Plausible a todas las páginas públicas. Las páginas de error (404) no se miden.",
+  "author": "LiteCMS",
+  "settings": [
+    { "key": "provider", "label": "Proveedor", "type": "select", "required": true, "options": ["Google Analytics 4", "Plausible"] },
+    { "key": "measurement_id", "label": "ID de medición (GA4)", "type": "text", "help": "Formato G-XXXXXXXXXX" },
+    { "key": "plausible_domain", "label": "Dominio (Plausible)", "type": "text", "help": "El dominio registrado en Plausible, ej: midominio.com" }
+  ]
+}

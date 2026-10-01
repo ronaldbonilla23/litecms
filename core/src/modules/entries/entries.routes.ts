@@ -4,6 +4,7 @@ import { verifyToken, type AuthRequest } from '../auth/auth.middleware';
 import { EntrySchema, EntryUpdateSchema } from '../../../../shared/contentTypes';
 import { getContentType } from '../contentTypes/contentTypes.service';
 import * as service from './entries.service';
+import { fireAction } from '../../plugins/hooks';
 
 const router = Router();
 
@@ -61,7 +62,9 @@ router.post('/', async (req: AuthRequest, res: Response, next: NextFunction) => 
         if (!validation.success) return badRequest(res, validation.error);
 
         const authorId = (req.user as { id?: number } | undefined)?.id;
-        res.status(201).json(await service.createEntry(typeId, validation.data, authorId));
+        const entry = await service.createEntry(typeId, validation.data, authorId);
+        fireAction('entry.saved', entry);
+        res.status(201).json(entry);
     } catch (error) {
         handleError(error, res, next);
     }
@@ -71,7 +74,9 @@ router.put('/:id', async (req: AuthRequest, res: Response, next: NextFunction) =
     try {
         const validation = EntryUpdateSchema.safeParse(req.body);
         if (!validation.success) return badRequest(res, validation.error);
-        res.json(await service.updateEntry(Number(req.params.id), validation.data));
+        const entry = await service.updateEntry(Number(req.params.id), validation.data);
+        fireAction('entry.saved', entry);
+        res.json(entry);
     } catch (error) {
         handleError(error, res, next);
     }
@@ -80,6 +85,7 @@ router.put('/:id', async (req: AuthRequest, res: Response, next: NextFunction) =
 router.delete('/:id', async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         await service.deleteEntry(Number(req.params.id));
+        fireAction('entry.deleted', { id: Number(req.params.id) });
         res.json({ message: 'Entrada eliminada' });
     } catch (error) {
         handleError(error, res, next);

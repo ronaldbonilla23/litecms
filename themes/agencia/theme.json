@@ -1,0 +1,101 @@
+{
+  "name": "agencia",
+  "title": "Agencia",
+  "version": "1.0.0",
+  "description": "Tema oscuro para agencias y estudios: portada con servicios y testimonios, catálogo de servicios y página de contacto con formulario.",
+  "author": "LiteCMS",
+  "settings": {
+    "primary_color": "#C2F86C",
+    "background_color": "#0e0e0e",
+    "header_font": "Plus Jakarta Sans",
+    "body_font": "Inter"
+  },
+  "plugins": ["contact-form"],
+  "templates": [
+    { "key": "header", "name": "Agencia · Header", "type": "header", "file": "templates/header.hbs" },
+    { "key": "footer", "name": "Agencia · Footer", "type": "footer", "file": "templates/footer.hbs" },
+    { "key": "servicio", "name": "Agencia · Servicio", "type": "single", "file": "templates/servicio.hbs" },
+    { "key": "servicios", "name": "Agencia · Servicios", "type": "archive", "file": "templates/servicios.hbs" }
+  ],
+  "content_types": [
+    {
+      "name": "Servicios",
+      "singular_name": "Servicio",
+      "slug": "servicios",
+      "description": "Lo que hacemos por nuestros clientes.",
+      "url_prefix": "/servicios",
+      "has_archive": true,
+      "single_template": "servicio",
+      "archive_template": "servicios",
+      "fields": [
+        { "key": "resumen", "label": "Resumen", "type": "textarea", "required": true },
+        { "key": "icono", "label": "Icono (emoji)", "type": "text" },
+        { "key": "precio_desde", "label": "Precio desde (USD)", "type": "number" },
+        { "key": "descripcion", "label": "Descripción", "type": "richtext" }
+      ],
+      "entries": [
+        {
+          "title": "Diseño web",
+          "data": {
+            "resumen": "Sitios rápidos, accesibles y pensados para convertir visitas en clientes.",
+            "icono": "🎨",
+            "precio_desde": 900,
+            "descripcion": "<p>Diseñamos tu sitio desde la estrategia: arquitectura de información, identidad visual y contenido orientado a resultados.</p><ul><li>Diseño responsive</li><li>Optimización de velocidad</li><li>Accesibilidad AA</li></ul>"
+          }
+        },
+        {
+          "title": "SEO y AEO",
+          "data": {
+            "resumen": "Posicionamiento en buscadores y en asistentes de IA como ChatGPT o Perplexity.",
+            "icono": "🔎",
+            "precio_desde": 400,
+            "descripcion": "<p>Auditoría técnica, datos estructurados, contenido que responde preguntas reales y seguimiento mensual.</p>"
+          }
+        },
+        {
+          "title": "Contenido y redes",
+          "data": {
+            "resumen": "Calendario editorial, redacción y piezas para redes sociales con voz de marca.",
+            "icono": "✍️",
+            "precio_desde": 350,
+            "descripcion": "<p>Planificamos y producimos contenido constante para que tu marca se mantenga presente.</p>"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Testimonios",
+      "singular_name": "Testimonio",
+      "slug": "testimonios",
+      "description": "Lo que dicen nuestros clientes.",
+      "url_prefix": "/testimonios",
+      "has_archive": false,
+      "fields": [
+        { "key": "cita", "label": "Cita", "type": "textarea", "required": true },
+        { "key": "cargo", "label": "Cargo y empresa", "type": "text" }
+      ],
+      "entries": [
+        { "title": "Laura Gómez", "data": { "cita": "Duplicamos las solicitudes de presupuesto en tres meses.", "cargo": "Directora, Estudio Norte" } },
+        { "title": "Andrés Ruiz", "data": { "cita": "El sitio carga al instante y por fin aparece en Google.", "cargo": "Fundador, Café Origen" } }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "title": "Inicio",
+      "slug": "/",
+      "file": "pages/home.hbs",
+      "header": "header",
+      "footer": "footer",
+      "meta_description": "Agencia de diseño web, SEO y contenido. Sitios rápidos que convierten visitas en clientes."
+    },
+    {
+      "title": "Contacto",
+      "slug": "/contacto",
+      "file": "pages/contacto.hbs",
+      "header": "header",
+      "footer": "footer",
+      "meta_description": "Cuéntanos tu proyecto y te respondemos en menos de 24 horas."
+    }
+  ]
+}

@@ -49,6 +49,8 @@ export const config = {
         uploads: path.join(ROOT, 'content', 'uploads'),
         publicDir: path.join(ROOT, 'core', 'public'),
         adminDist: path.join(ROOT, 'admin', 'dist'),
+        plugins: process.env.LITECMS_PLUGINS_DIR || path.join(ROOT, 'plugins'),
+        themes: process.env.LITECMS_THEMES_DIR || path.join(ROOT, 'themes'),
         // Relativo a este archivo: vale para src/*.ts (ts-node) y dist/*.js (compilado)
         migrations: path.join(__dirname, 'database', 'migrations'),
     },

@@ -18,6 +18,7 @@ import { ContentTypes } from './pages/ContentTypes';
 import ContentTypeEditor from './pages/ContentTypeEditor';
 import { Entries } from './pages/Entries';
 import EntryEditor from './pages/EntryEditor';
+import { Extensions } from './pages/Extensions';
 
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const token = localStorage.getItem('token');
@@ -174,6 +175,8 @@ function App() {
         <Route path="/dashboard/content/:typeSlug" element={<ProtectedRoute><Entries /></ProtectedRoute>} />
         <Route path="/dashboard/content/:typeSlug/new" element={<ProtectedRoute><EntryEditor /></ProtectedRoute>} />
         <Route path="/dashboard/content/:typeSlug/edit/:id" element={<ProtectedRoute><EntryEditor /></ProtectedRoute>} />
+
+        <Route path="/dashboard/extensions" element={<ProtectedRoute><Extensions /></ProtectedRoute>} />
 
         {/* Redirect any unknown route to dashboard (which will redirect to login if not authenticated) */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
